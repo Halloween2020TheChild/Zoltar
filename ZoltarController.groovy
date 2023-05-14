@@ -113,7 +113,11 @@ public class GPTInterface {
 		}
 	}
 }
+
 String keyLocation = ScriptingEngine.getWorkspace().getAbsolutePath()+"/gpt-key.txt"
+if(!new File(keyLocation).exists()) {
+	
+}
 println "Loading API key from "+keyLocation
 String content = new String(Files.readAllBytes(Paths.get(keyLocation)));
 println "API key: "+content
