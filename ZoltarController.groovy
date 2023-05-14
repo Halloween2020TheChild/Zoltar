@@ -14,6 +14,7 @@ import javax.sound.sampled.LineEvent
 import javax.sound.sampled.LineListener
 
 import com.neuronrobotics.bowlerstudio.AudioPlayer
+import com.neuronrobotics.bowlerstudio.AudioStatus
 import com.neuronrobotics.bowlerstudio.BowlerKernel
 import com.neuronrobotics.bowlerstudio.BowlerStudio
 import com.neuronrobotics.bowlerstudio.scripting.ScriptingEngine
@@ -154,11 +155,9 @@ try  {
 	// Player is a thread(threads can only run one time) so it can be
 	// used has to be initiated every time
 	tts = new AudioPlayer();
-	tts.setSpeakProgress({AudioInputStream ais, int nRead->
-		double len = (ais.getFrameLength()*2)
-		double now = nRead
-		double percent = now/len*100.0
-		println "Progress: "+percent+"%"
+	tts.setSpeakProgress({double percent,AudioStatus status,int[] intData->
+
+		println "Progress: "+percent+"% Status "+status+" "
 	})
 	tts.setAudio(audio);
 	tts.setGain((float)1);
