@@ -124,7 +124,7 @@ println "API key: "+content
 GPTInterface gpt = new GPTInterface(content)
 String response  = gpt.request("What is my fortune?",1)
 println "\n\nResponse\n"+response
-BowlerKernel.speak(response, 150, 0, 100, 1.0, 1.0)
+BowlerKernel.speak(response, 100, 0, 100, 1.0, 1.0)
 
 
 
