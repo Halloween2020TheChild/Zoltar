@@ -97,7 +97,7 @@ public class GPTInterface {
 		if(Math.random()>0.5)
 			phrase="Pretend you are an Fortuine teller that tells fortunes in dad jokes. Keep your response less than "+(maxSize*0.5)+" charecters. As a Fortuine teller respond to: "+phrase
 		else
-			phrase="Pretend you are an pessimistic Fortuine teller. Keep your response less than "+(maxSize*0.5)+" charecters. As a Fortuine teller make a joke response to: "+phrase
+			phrase="Pretend you are an thoughtful Fortuine teller. Keep your response less than "+(maxSize*0.5)+" charecters. As a Fortuine teller make a thoughtful response to: "+phrase
 			
 		String requestBody = String.format("{\"model\":\"%s\",\"messages\":\"%s\",\"temperature\":%f}", AI_MODEL_NAME, phrase, randomness);
 		HashMap<String,Object> message = new HashMap(); 
@@ -185,6 +185,8 @@ println "API key: "+content
 GPTInterface gpt = new GPTInterface(content)
 String response  = gpt.request("What is my fortune?",0.9)
 println "\n\nResponse\n"+response
+AudioPlayer.setThreshhold(600)
+AudioPlayer.setLowerThreshhold(100)
 ISpeakingProgress sp ={double percent,AudioStatus status->
 
 		println "Progress: "+percent+"% Status "+status+" "
