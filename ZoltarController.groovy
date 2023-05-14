@@ -1,4 +1,5 @@
 
+import java.applet.AudioClip
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -24,6 +25,10 @@ import com.squareup.okhttp.Request
 import com.squareup.okhttp.RequestBody
 import com.squareup.okhttp.Response
 
+import javafx.application.Platform
+import javafx.scene.control.Alert
+import javafx.scene.control.Alert.AlertType
+import javafx.scene.control.TextInputDialog
 import marytts.LocalMaryInterface
 import marytts.MaryInterface
 import marytts.datatypes.MaryData
@@ -35,7 +40,7 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 
 public class GPTInterface {
-
+	Alert a;
 	public final String AI_MODEL_NAME = "gpt-3.5-turbo";
 
 	private String API_KEY;
@@ -80,10 +85,10 @@ public class GPTInterface {
    }'
 	 */
 	public String request(String phrase, float randomness) throws IOException {
-		if(Math.random()>0.75)
-			phrase="Pretend you are an inspirational Fortuine teller. Keep your response less than "+(maxSize*0.5)+" charecters. As a Fortuine teller respond to: "+phrase
+		if(Math.random()>0.5)
+			phrase="Pretend you are an Fortuine teller that tells fortunes in dad jokes. Keep your response less than "+(maxSize*0.5)+" charecters. As a Fortuine teller respond to: "+phrase
 		else
-			phrase="Pretend you are an downbeat joke telling Fortuine teller. Keep your response less than "+(maxSize*0.5)+" charecters. As a Fortuine teller make a joke response to: "+phrase
+			phrase="Pretend you are an pessimistic Fortuine teller. Keep your response less than "+(maxSize*0.5)+" charecters. As a Fortuine teller make a joke response to: "+phrase
 			
 		String requestBody = String.format("{\"model\":\"%s\",\"messages\":\"%s\",\"temperature\":%f}", AI_MODEL_NAME, phrase, randomness);
 		HashMap<String,Object> message = new HashMap(); 
@@ -130,13 +135,46 @@ public class GPTInterface {
 
 String keyLocation = ScriptingEngine.getWorkspace().getAbsolutePath()+"/gpt-key.txt"
 if(!new File(keyLocation).exists()) {
-	
+	BowlerStudio.runLater({
+		TextInputDialog dialog = new TextInputDialog("your OpenAI API Key here");
+		dialog.setTitle("Enter your OpenAI Key ");
+		dialog.setHeaderText("Create key here https://platform.openai.com/account/api-keys");
+		dialog.setContentText("Please enter your key:");
+		
+		// Traditional way to get the response value.
+		Optional<String> result = dialog.showAndWait();
+		if (result.isPresent()){
+			String resultGet = result.get()
+			System.out.println("Your key: " + resultGet);
+			new Thread({
+				try {
+					File myObj = new File(keyLocation);
+					if (myObj.createNewFile()) {
+					  System.out.println("File created: " + myObj.getName());
+					} else {
+					  System.out.println("File already exists.");
+					}
+					FileWriter myWriter = new FileWriter(keyLocation);
+					myWriter.write(resultGet);
+					myWriter.close();
+					System.out.println("Successfully wrote key to the file.");
+				  } catch (IOException e) {
+					System.out.println("An error occurred.");
+					e.printStackTrace();
+				  }
+				  
+				  
+			}).start()
+		}
+		
+	})
+	return;
 }
 println "Loading API key from "+keyLocation
 String content = new String(Files.readAllBytes(Paths.get(keyLocation)));
 println "API key: "+content
 GPTInterface gpt = new GPTInterface(content)
-String response  = gpt.request("What is my fortune?",1)
+String response  = gpt.request("What is my fortune?",0.9)
 println "\n\nResponse\n"+response
 //BowlerKernel.speak(response, 100, 0, 201, 1.0, 1.0)
 AudioPlayer tts;
@@ -145,7 +183,14 @@ marytts.setVoice("cmu-slt-hsmm");
 //marytts.setVoice("dfki-spike-hsmm");
 //marytts.setVoice("dfki-prudence-hsmm");
 //marytts.setVoice("dfki-poppy-hsmm");
-
+    	Platform.runLater( {
+			Alert alert = new Alert(AlertType.INFORMATION);
+			gpt.a = alert;
+			alert.setTitle("This Operation takes time");
+			alert.setHeaderText("");
+			alert.setContentText("Just chill out...");
+			alert.showAndWait();
+		});
 try  {
 	
 	MaryData incoming = marytts.getMaryDataFromText(response);
@@ -155,10 +200,17 @@ try  {
 	// Player is a thread(threads can only run one time) so it can be
 	// used has to be initiated every time
 	tts = new AudioPlayer();
-	tts.setSpeakProgress({double percent,AudioStatus status,int[] intData->
+	tts.setSpeakProgress({double percent,AudioStatus status->
 
 		println "Progress: "+percent+"% Status "+status+" "
+		if(gpt.a!=null) {
+			Platform.runLater( {
+				gpt.a.setContentText((status==AudioStatus.attack)?"0":"-");
+			});
+		}
 	})
+	tts.setLowerThreshhold(200)
+	tts.setThreshhold(500)
 	tts.setAudio(audio);
 	tts.setGain((float)1);
 	tts.setDaemon(false);
