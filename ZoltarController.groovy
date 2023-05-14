@@ -6,7 +6,14 @@ import java.nio.charset.StandardCharsets
 
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.logging.Level
+import java.util.logging.Logger
 
+import javax.sound.sampled.AudioInputStream
+import javax.sound.sampled.LineEvent
+import javax.sound.sampled.LineListener
+
+import com.neuronrobotics.bowlerstudio.AudioPlayer
 import com.neuronrobotics.bowlerstudio.BowlerKernel
 import com.neuronrobotics.bowlerstudio.BowlerStudio
 import com.neuronrobotics.bowlerstudio.scripting.ScriptingEngine
@@ -15,6 +22,12 @@ import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
 import com.squareup.okhttp.RequestBody
 import com.squareup.okhttp.Response
+
+import marytts.LocalMaryInterface
+import marytts.MaryInterface
+import marytts.datatypes.MaryData
+import marytts.exceptions.SynthesisException
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -66,10 +79,10 @@ public class GPTInterface {
    }'
 	 */
 	public String request(String phrase, float randomness) throws IOException {
-		if(Math.random()>0.5)
-			phrase="Pretend you are an inspirational Fortuine teller. Keep your response less than "+(maxSize*0.5)+" charectors. As a Fortuine teller respond to: "+phrase
+		if(Math.random()>0.75)
+			phrase="Pretend you are an inspirational Fortuine teller. Keep your response less than "+(maxSize*0.5)+" charecters. As a Fortuine teller respond to: "+phrase
 		else
-			phrase="Pretend you are an mean joke telling Fortuine teller. Keep your response less than "+(maxSize*0.5)+" charectors. As a Fortuine teller make a joke response to: "+phrase
+			phrase="Pretend you are an downbeat joke telling Fortuine teller. Keep your response less than "+(maxSize*0.5)+" charecters. As a Fortuine teller make a joke response to: "+phrase
 			
 		String requestBody = String.format("{\"model\":\"%s\",\"messages\":\"%s\",\"temperature\":%f}", AI_MODEL_NAME, phrase, randomness);
 		HashMap<String,Object> message = new HashMap(); 
@@ -124,7 +137,52 @@ println "API key: "+content
 GPTInterface gpt = new GPTInterface(content)
 String response  = gpt.request("What is my fortune?",1)
 println "\n\nResponse\n"+response
-BowlerKernel.speak(response, 100, 0, 201, 1.0, 1.0)
+//BowlerKernel.speak(response, 100, 0, 201, 1.0, 1.0)
+AudioPlayer tts;
+LocalMaryInterface marytts = new LocalMaryInterface();
+marytts.setVoice("cmu-slt-hsmm");
+//marytts.setVoice("dfki-spike-hsmm");
+//marytts.setVoice("dfki-prudence-hsmm");
+//marytts.setVoice("dfki-poppy-hsmm");
+
+try  {
+	
+	MaryData incoming = marytts.getMaryDataFromText(response);
+	MaryData out = marytts.process(incoming);
+	AudioInputStream audio = out.getAudio();
+	
+	// Player is a thread(threads can only run one time) so it can be
+	// used has to be initiated every time
+	tts = new AudioPlayer();
+	tts.setSpeakProgress({AudioInputStream ais, int nRead->
+		double len = (ais.getFrameLength()*2)
+		double now = nRead
+		double percent = now/len*100.0
+		println "Progress: "+percent+"%"
+	})
+	tts.setAudio(audio);
+	tts.setGain((float)1);
+	tts.setDaemon(false);
+	tts.lineListener=new LineListener() {
+
+		@Override
+		public void update(LineEvent event) {
+			println event
+		}
+		
+	}
+	tts.start();
+	
+	tts.join();
+	
+} catch (SynthesisException ex) {
+	Logger.getLogger(getClass().getName()).log(Level.WARNING, "Error saying phrase.", ex);
+} catch (IOException ex) {
+	Logger.getLogger(getClass().getName()).log(Level.WARNING, "IO Exception", ex);
+} catch (InterruptedException ex) {
+	Logger.getLogger(getClass().getName()).log(Level.WARNING, "Interrupted ", ex);
+	tts.interrupt();
+}
 
 
 
