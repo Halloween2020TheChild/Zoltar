@@ -16,6 +16,7 @@ import javax.sound.sampled.LineListener
 
 import com.neuronrobotics.bowlerstudio.AudioPlayer
 import com.neuronrobotics.bowlerstudio.AudioStatus
+import com.neuronrobotics.bowlerstudio.ISpeakingProgress 
 import com.neuronrobotics.bowlerstudio.BowlerKernel
 import com.neuronrobotics.bowlerstudio.BowlerStudio
 import com.neuronrobotics.bowlerstudio.scripting.ScriptingEngine
@@ -72,6 +73,14 @@ public class GPTInterface {
 	//	new BasicHttpClientConnectionManager(socketFactoryRegistry);
 	public GPTInterface(String APIKey) {
 		this.API_KEY = APIKey;
+		Platform.runLater( {
+			Alert alert = new Alert(AlertType.INFORMATION);
+			a = alert;
+			alert.setTitle("This Operation takes time");
+			alert.setHeaderText("");
+			alert.setContentText("Just chill out...");
+			alert.showAndWait();
+		});
 	}
 
 	public String request(String phrase) throws IOException {
@@ -176,31 +185,7 @@ println "API key: "+content
 GPTInterface gpt = new GPTInterface(content)
 String response  = gpt.request("What is my fortune?",0.9)
 println "\n\nResponse\n"+response
-//BowlerKernel.speak(response, 100, 0, 201, 1.0, 1.0)
-AudioPlayer tts;
-LocalMaryInterface marytts = new LocalMaryInterface();
-marytts.setVoice("cmu-slt-hsmm");
-//marytts.setVoice("dfki-spike-hsmm");
-//marytts.setVoice("dfki-prudence-hsmm");
-//marytts.setVoice("dfki-poppy-hsmm");
-    	Platform.runLater( {
-			Alert alert = new Alert(AlertType.INFORMATION);
-			gpt.a = alert;
-			alert.setTitle("This Operation takes time");
-			alert.setHeaderText("");
-			alert.setContentText("Just chill out...");
-			alert.showAndWait();
-		});
-try  {
-	
-	MaryData incoming = marytts.getMaryDataFromText(response);
-	MaryData out = marytts.process(incoming);
-	AudioInputStream audio = out.getAudio();
-	
-	// Player is a thread(threads can only run one time) so it can be
-	// used has to be initiated every time
-	tts = new AudioPlayer();
-	tts.setSpeakProgress({double percent,AudioStatus status->
+ISpeakingProgress sp ={double percent,AudioStatus status->
 
 		println "Progress: "+percent+"% Status "+status+" "
 		if(gpt.a!=null) {
@@ -208,34 +193,9 @@ try  {
 				gpt.a.setContentText((status==AudioStatus.attack)?"0":"-");
 			});
 		}
-	})
-	tts.setLowerThreshhold(200)
-	tts.setThreshhold(500)
-	tts.setAudio(audio);
-	tts.setGain((float)1);
-	tts.setDaemon(false);
-	tts.lineListener=new LineListener() {
-
-		@Override
-		public void update(LineEvent event) {
-			println event
-		}
-		
 	}
-	tts.start();
-	
-	tts.join();
-	
-} catch (SynthesisException ex) {
-	Logger.getLogger(getClass().getName()).log(Level.WARNING, "Error saying phrase.", ex);
-} catch (IOException ex) {
-	Logger.getLogger(getClass().getName()).log(Level.WARNING, "IO Exception", ex);
-} catch (InterruptedException ex) {
-	Logger.getLogger(getClass().getName()).log(Level.WARNING, "Interrupted ", ex);
-	tts.interrupt();
-}
+BowlerKernel.speak(response, 100, 0, 201, 1.0, 1.0,sp)
 
-
-
+ 
 
 
