@@ -82,6 +82,8 @@ public class GPTInterface {
 	Type TT_mapStringString = new TypeToken<HashMap<String, Object>>() {}.getType();
 	Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 	int maxSize = 240
+	AudioStatus status;
+	AudioStatus laststatus
 	
 	//
 	//	final TrustStrategy acceptingTrustStrategy = new TrustStrategy() {
@@ -216,15 +218,15 @@ println "Loading API key from "+keyLocation
 String content = new String(Files.readAllBytes(Paths.get(keyLocation)));
 println "API key: "+content
 GPTInterface gpt = new GPTInterface(content)
-String response  = gpt.request("What is my fortune?",0.9)
+String response  = gpt.request("What does the future hold for me?",0.9)
 println "\n\nResponse\n"+response
 AudioPlayer.setThreshhold(600/65535.0)
 AudioPlayer.setLowerThreshhold(100/65535.0)
 ISpeakingProgress sp ={double percent,AudioStatus status->
 	if(status==AudioStatus.release||status==AudioStatus.sustain)
 		return
-	boolean isMouthOpen = (status==AudioStatus.attack)
-	mouth.setTargetEngineeringUnits(isMouthOpen?-20.0:0);
+	gpt.status=status;
+	
 	println "Progress: "+percent+"% Status "+status+" "
 //	if(gpt.a!=null) {
 //		Platform.runLater( {
@@ -232,7 +234,21 @@ ISpeakingProgress sp ={double percent,AudioStatus status->
 //		});
 //	}
 	}
+running =true
+new Thread({
+	
+	while(running) {
+		Thread.sleep(16)
+		if(gpt.status != gpt.laststatus) {
+			gpt.laststatus=gpt.status;
+			boolean isMouthOpen = (gpt.laststatus==AudioStatus.attack)
+			mouth.setTargetEngineeringUnits(isMouthOpen?-20.0:0);
+		}
+	}
+	println "Zoltar animation thread exit clean"
+}).start()
 BowlerKernel.speak(response, 100, 0, 201, 1.0, 1.0,sp)
+running=false
 //Platform.runLater( {gpt.a.close();})
  
 
