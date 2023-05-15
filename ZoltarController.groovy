@@ -16,10 +16,16 @@ import javax.sound.sampled.LineListener
 
 import com.neuronrobotics.bowlerstudio.AudioPlayer
 import com.neuronrobotics.bowlerstudio.AudioStatus
-import com.neuronrobotics.bowlerstudio.ISpeakingProgress 
+import com.neuronrobotics.bowlerstudio.ISpeakingProgress
+import com.neuronrobotics.bowlerstudio.creature.MobileBaseCadManager
+import com.neuronrobotics.bowlerstudio.creature.MobileBaseLoader
 import com.neuronrobotics.bowlerstudio.BowlerKernel
 import com.neuronrobotics.bowlerstudio.BowlerStudio
 import com.neuronrobotics.bowlerstudio.scripting.ScriptingEngine
+import com.neuronrobotics.sdk.addons.kinematics.AbstractLink
+import com.neuronrobotics.sdk.addons.kinematics.DHParameterKinematics
+import com.neuronrobotics.sdk.addons.kinematics.MobileBase
+import com.neuronrobotics.sdk.common.DeviceManager
 import com.squareup.okhttp.MediaType
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
@@ -39,6 +45,33 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
+boolean regen=false;
+MobileBase base=DeviceManager.getSpecificDevice( "Standard6dof",{
+	//If the device does not exist, prompt for the connection
+
+	MobileBase m = MobileBaseLoader.fromGit(
+			"https://github.com/Halloween2020TheChild/GroguMechanicsCad.git",
+			"hephaestus.xml"
+			)
+	if(m==null)
+		throw new RuntimeException("Arm failed to assemble itself")
+	println "Connecting new device robot arm "+m
+	regen=true;
+	return m
+})
+if(regen) {
+	MobileBaseCadManager get = MobileBaseCadManager.get( base)
+	get.setConfigurationViewerMode(false)
+	get.generateCad()
+	Thread.sleep(100);
+	while(get.getProcesIndictor().get()<1){
+		println "Waiting for cad to get to 1:"+get.getProcesIndictor().get()
+		ThreadUtil.wait(1000)
+	}
+}
+DHParameterKinematics spine = base.getAllDHChains().get(0);
+MobileBase head = spine.getSlaveMobileBase(5)
+AbstractLink mouth =head.getAllDHChains().get(0).getAbstractLink(0)
 
 public class GPTInterface {
 	Alert a;
@@ -188,13 +221,16 @@ println "\n\nResponse\n"+response
 AudioPlayer.setThreshhold(600/65535.0)
 AudioPlayer.setLowerThreshhold(100/65535.0)
 ISpeakingProgress sp ={double percent,AudioStatus status->
-
-		println "Progress: "+percent+"% Status "+status+" "
-		if(gpt.a!=null) {
-			Platform.runLater( {
-				gpt.a.setContentText((status==AudioStatus.attack)?"0":"-");
-			});
-		}
+	if(status==AudioStatus.release||status==AudioStatus.sustain)
+		return
+	boolean isMouthOpen = (status==AudioStatus.attack)
+	mouth.setTargetEngineeringUnits(isMouthOpen?-20.0:0);
+	println "Progress: "+percent+"% Status "+status+" "
+	if(gpt.a!=null) {
+		Platform.runLater( {
+			gpt.a.setContentText((status==AudioStatus.attack)?"0":"-");
+		});
+	}
 	}
 BowlerKernel.speak(response, 100, 0, 201, 1.0, 1.0,sp)
 Platform.runLater( {gpt.a.close();})
