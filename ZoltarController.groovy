@@ -185,8 +185,8 @@ println "API key: "+content
 GPTInterface gpt = new GPTInterface(content)
 String response  = gpt.request("What is my fortune?",0.9)
 println "\n\nResponse\n"+response
-AudioPlayer.setThreshhold(600)
-AudioPlayer.setLowerThreshhold(100)
+AudioPlayer.setThreshhold(600/65535.0)
+AudioPlayer.setLowerThreshhold(100/65535.0)
 ISpeakingProgress sp ={double percent,AudioStatus status->
 
 		println "Progress: "+percent+"% Status "+status+" "
