@@ -197,7 +197,7 @@ ISpeakingProgress sp ={double percent,AudioStatus status->
 		}
 	}
 BowlerKernel.speak(response, 100, 0, 201, 1.0, 1.0,sp)
-
+Platform.runLater( {gpt.a.close();})
  
 
 
