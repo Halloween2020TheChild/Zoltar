@@ -106,14 +106,14 @@ public class GPTInterface {
 	//	new BasicHttpClientConnectionManager(socketFactoryRegistry);
 	public GPTInterface(String APIKey) {
 		this.API_KEY = APIKey;
-		Platform.runLater( {
-			Alert alert = new Alert(AlertType.INFORMATION);
-			a = alert;
-			alert.setTitle("This Operation takes time");
-			alert.setHeaderText("");
-			alert.setContentText("Just chill out...");
-			alert.showAndWait();
-		});
+//		Platform.runLater( {
+//			Alert alert = new Alert(AlertType.INFORMATION);
+//			a = alert;
+//			alert.setTitle("This Operation takes time");
+//			alert.setHeaderText("");
+//			alert.setContentText("Just chill out...");
+//			alert.showAndWait();
+//		});
 	}
 
 	public String request(String phrase) throws IOException {
@@ -226,14 +226,14 @@ ISpeakingProgress sp ={double percent,AudioStatus status->
 	boolean isMouthOpen = (status==AudioStatus.attack)
 	mouth.setTargetEngineeringUnits(isMouthOpen?-20.0:0);
 	println "Progress: "+percent+"% Status "+status+" "
-	if(gpt.a!=null) {
-		Platform.runLater( {
-			gpt.a.setContentText((status==AudioStatus.attack)?"0":"-");
-		});
-	}
+//	if(gpt.a!=null) {
+//		Platform.runLater( {
+//			gpt.a.setContentText((status==AudioStatus.attack)?"0":"-");
+//		});
+//	}
 	}
 BowlerKernel.speak(response, 100, 0, 201, 1.0, 1.0,sp)
-Platform.runLater( {gpt.a.close();})
+//Platform.runLater( {gpt.a.close();})
  
 
 
