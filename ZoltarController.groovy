@@ -139,7 +139,7 @@ public class GPTInterface {
 			String jsonString = response.body().string();
 			HashMap<String, Object> database = gson.fromJson(jsonString, TT_mapStringString);
 			ArrayList<Object> choices = database.get("choices")
-			HashMap<String, Object> firstChoice = choices.get(0)
+			HashMap<String, Object> firstChoice = choices.get(choices.size()-1)
 			HashMap<String, Object> messageContent = firstChoice.get("message")
 			String ret = messageContent.get("content").toString()
 			println ret
