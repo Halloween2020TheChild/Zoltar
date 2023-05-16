@@ -170,8 +170,7 @@ public class GPTInterface {
 			HashMap<String, Object> messageContent = firstChoice.get("message")
 			String ret = messageContent.get("content").toString()
 			println ret
-			if(ret.length()>maxSize)
-				ret=ret.substring(0, maxSize)
+			
 			return ret
 		} catch (Exception e) {
 			e.printStackTrace();
