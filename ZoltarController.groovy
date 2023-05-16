@@ -28,6 +28,7 @@ import com.neuronrobotics.sdk.addons.kinematics.MobileBase
 import com.neuronrobotics.sdk.addons.kinematics.math.RotationNR
 import com.neuronrobotics.sdk.addons.kinematics.math.TransformNR
 import com.neuronrobotics.sdk.common.DeviceManager
+import com.neuronrobotics.sdk.util.ThreadUtil
 import com.squareup.okhttp.MediaType
 import com.squareup.okhttp.OkHttpClient
 import com.squareup.okhttp.Request
@@ -87,37 +88,9 @@ public class GPTInterface {
 	AudioStatus status;
 	AudioStatus laststatus
 
-	//
-	//	final TrustStrategy acceptingTrustStrategy = new TrustStrategy() {
-	//		@Override
-	//		public boolean isTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
-	//			return true;
-	//		}
-	//
-	//	};
-	//	final SSLContext sslContext = SSLContexts.custom()
-	//	.loadTrustMaterial(null, acceptingTrustStrategy)
-	//	.build();
-	//	final SSLConnectionSocketFactory sslsf =
-	//	new SSLConnectionSocketFactory(sslContext, NoopHostnameVerifier.INSTANCE);
-	//	final Registry<ConnectionSocketFactory> socketFactoryRegistry =
-	//	RegistryBuilder.<ConnectionSocketFactory> create()
-	//	.register("https", sslsf)
-	//	.register("http", new PlainConnectionSocketFactory())
-	//	.build();
-	//
-	//	final BasicHttpClientConnectionManager connectionManager =
-	//	new BasicHttpClientConnectionManager(socketFactoryRegistry);
 	public GPTInterface(String APIKey) {
 		this.API_KEY = APIKey;
-		//		Platform.runLater( {
-		//			Alert alert = new Alert(AlertType.INFORMATION);
-		//			a = alert;
-		//			alert.setTitle("This Operation takes time");
-		//			alert.setHeaderText("");
-		//			alert.setContentText("Just chill out...");
-		//			alert.showAndWait();
-		//		});
+
 	}
 
 	public String request(String phrase) throws IOException {
