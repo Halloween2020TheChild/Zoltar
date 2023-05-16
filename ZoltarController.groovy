@@ -301,12 +301,14 @@ ISpeakingProgress sp ={double percent,AudioStatus status->
 
 AudioPlayer.setThreshhold(600/65535.0)
 AudioPlayer.setLowerThreshhold(100/65535.0)
+double voice =300
+double echo = 0.5
 new Thread({
-	BowlerKernel.speak("I am contacting the spirit world...", 200, 0, 100, 1.0, 1.0,sp)
+	BowlerKernel.speak("I am contacting the spirit world...", 200, 0, voice, echo, 1.0,sp)
 }).start()
 response  = gpt.request("What does the future hold for me?",0.9)
 println "\n\nResponse\n"+response
-BowlerKernel.speak(response, 200, 0, 100, 1.0, 1.0,sp)
+BowlerKernel.speak(response, 200, 0, voice, echo, 1.0,sp)
 running=false
 //Platform.runLater( {gpt.a.close();})
 
