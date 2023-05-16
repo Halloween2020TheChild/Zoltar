@@ -227,7 +227,7 @@ ISpeakingProgress sp ={double percent,AudioStatus status->
 		return
 	gpt.status=status;
 	
-	println "Progress: "+percent+"% Status "+status+" "
+	//println "Progress: "+percent+"% Status "+status+" "
 //	if(gpt.a!=null) {
 //		Platform.runLater( {
 //			gpt.a.setContentText((status==AudioStatus.attack)?"0":"-");
@@ -243,11 +243,12 @@ new Thread({
 			gpt.laststatus=gpt.status;
 			boolean isMouthOpen = (gpt.laststatus==AudioStatus.attack)
 			mouth.setTargetEngineeringUnits(isMouthOpen?-20.0:0);
+			mouth.flush(0);
 		}
 	}
 	println "Zoltar animation thread exit clean"
 }).start()
-BowlerKernel.speak(response, 100, 0, 201, 1.0, 1.0,sp)
+BowlerKernel.speak(response, 200, 0, 201, 1.0, 1.0,sp)
 running=false
 //Platform.runLater( {gpt.a.close();})
  
