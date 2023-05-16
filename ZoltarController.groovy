@@ -324,13 +324,6 @@ ISpeakingProgress sp ={double percent,AudioStatus status->
 	if(status==AudioStatus.release||status==AudioStatus.sustain)
 		return
 	gpt.status=status;
-
-	//println "Progress: "+percent+"% Status "+status+" "
-	//	if(gpt.a!=null) {
-	//		Platform.runLater( {
-	//			gpt.a.setContentText((status==AudioStatus.attack)?"0":"-");
-	//		});
-	//	}
 }
 
 BowlerKernel.speak("I am consulting the spirt world...", 200, 0, 201, 1.0, 1.0,sp)
