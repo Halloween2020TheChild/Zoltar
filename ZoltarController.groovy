@@ -132,9 +132,9 @@ public class GPTInterface {
 	 */
 	public String request(String phrase, float randomness) throws IOException {
 		if(Math.random()>0.5)
-			phrase="Pretend you are an Fortuine teller that tells fortunes in dad jokes. Keep your response less than "+(maxSize*0.5)+" charecters. As a Fortuine teller respond to: "+phrase
+			phrase="Pretend you are a Fortune teller that tells fortunes in dad jokes. Keep your response less than "+(maxSize*0.5)+" characters. As a Fortune teller respond to: "+phrase
 		else
-			phrase="Pretend you are an thoughtful Fortuine teller. Keep your response less than "+(maxSize*0.5)+" charecters. As a Fortuine teller make a thoughtful response to: "+phrase
+			phrase="Pretend you are a thoughtful Fortune teller. Keep your response less than "+(maxSize*0.5)+" charecters. As a Fortune teller make a thoughtful response to: "+phrase
 
 		String requestBody = String.format("{\"model\":\"%s\",\"messages\":\"%s\",\"temperature\":%f}", AI_MODEL_NAME, phrase, randomness);
 		HashMap<String,Object> message = new HashMap();
@@ -182,8 +182,8 @@ String keyLocation = ScriptingEngine.getWorkspace().getAbsolutePath()+"/gpt-key.
 if(!new File(keyLocation).exists()) {
 	BowlerStudio.runLater({
 		TextInputDialog dialog = new TextInputDialog("your OpenAI API Key here");
-		dialog.setTitle("Enter your OpenAI Key ");
-		dialog.setHeaderText("Create key here https://platform.openai.com/account/api-keys");
+		dialog.setTitle("Enter your OpenAI Key");
+		dialog.setHeaderText("Create key here - https://platform.openai.com/account/api-keys");
 		dialog.setContentText("Please enter your key:");
 
 		// Traditional way to get the response value.
@@ -202,7 +202,7 @@ if(!new File(keyLocation).exists()) {
 					FileWriter myWriter = new FileWriter(keyLocation);
 					myWriter.write(resultGet);
 					myWriter.close();
-					System.out.println("Successfully wrote key to the file.");
+					System.out.println("Successfully wrote key to your local file.");
 				} catch (IOException e) {
 					System.out.println("An error occurred.");
 					e.printStackTrace();
