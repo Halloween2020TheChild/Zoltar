@@ -105,7 +105,7 @@ public class GPTInterface {
 	 */
 	public String request(String phrase, float randomness) throws IOException {
 		if(Math.random()>0.5)
-			phrase="Pretend you are a Fortune teller that tells fortunes in dad jokes. Keep your response less than "+(maxSize*0.5)+" characters. As a Fortune teller respond to: "+phrase
+			phrase="Pretend you are a bad fortuine teller. Keep your response less than "+(maxSize*0.5)+" characters. As a Fortune teller respond to: "+phrase
 		else
 			phrase="Pretend you are a thoughtful Fortune teller. Keep your response less than "+(maxSize*0.5)+" charecters. As a Fortune teller make a thoughtful response to: "+phrase
 
@@ -301,11 +301,12 @@ ISpeakingProgress sp ={double percent,AudioStatus status->
 
 AudioPlayer.setThreshhold(600/65535.0)
 AudioPlayer.setLowerThreshhold(100/65535.0)
-
-BowlerKernel.speak("I am contacting the spirit world...", 200, 0, 201, 1.0, 1.0,sp)
+new Thread({
+	BowlerKernel.speak("I am contacting the spirit world...", 200, 0, 100, 1.0, 1.0,sp)
+}).start()
 response  = gpt.request("What does the future hold for me?",0.9)
 println "\n\nResponse\n"+response
-BowlerKernel.speak(response, 200, 0, 201, 1.0, 1.0,sp)
+BowlerKernel.speak(response, 200, 0, 100, 1.0, 1.0,sp)
 running=false
 //Platform.runLater( {gpt.a.close();})
 
