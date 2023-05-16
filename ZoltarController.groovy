@@ -329,7 +329,7 @@ ISpeakingProgress sp ={double percent,AudioStatus status->
 AudioPlayer.setThreshhold(600/65535.0)
 AudioPlayer.setLowerThreshhold(100/65535.0)
 
-BowlerKernel.speak("I am consulting the spirt world...", 200, 0, 201, 1.0, 1.0,sp)
+BowlerKernel.speak("I am contacting the spirit world...", 200, 0, 201, 1.0, 1.0,sp)
 response  = gpt.request("What does the future hold for me?",0.9)
 println "\n\nResponse\n"+response
 BowlerKernel.speak(response, 200, 0, 201, 1.0, 1.0,sp)
