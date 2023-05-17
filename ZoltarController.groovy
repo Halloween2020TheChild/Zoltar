@@ -1,6 +1,26 @@
+@Grab(group='net.java.dev.jna', module='jna', version='5.7.0')
+@Grab(group='com.alphacephei', module='vosk', version='0.3.45')
+
+import java.io.FileInputStream;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import javax.sound.sampled.AudioFormat
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine
+import javax.sound.sampled.SourceDataLine
+import javax.sound.sampled.TargetDataLine
+import javax.sound.sampled.UnsupportedAudioFileException;
+
+import org.vosk.LogLevel;
+import org.vosk.Recognizer;
+
+import com.neuronrobotics.bowlerstudio.scripting.ScriptingEngine
+
+import org.vosk.LibVosk;
+import org.vosk.Model;
 
 import java.applet.AudioClip
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets
@@ -21,7 +41,6 @@ import com.neuronrobotics.bowlerstudio.creature.MobileBaseCadManager
 import com.neuronrobotics.bowlerstudio.creature.MobileBaseLoader
 import com.neuronrobotics.bowlerstudio.BowlerKernel
 import com.neuronrobotics.bowlerstudio.BowlerStudio
-import com.neuronrobotics.bowlerstudio.scripting.ScriptingEngine
 import com.neuronrobotics.sdk.addons.kinematics.AbstractLink
 import com.neuronrobotics.sdk.addons.kinematics.DHParameterKinematics
 import com.neuronrobotics.sdk.addons.kinematics.MobileBase
@@ -87,14 +106,79 @@ public class GPTInterface {
 	int maxSize = 240
 	AudioStatus status;
 	AudioStatus laststatus
+	
+	
+	
+	AudioFormat format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 60000, 16, 2, 4, 44100, false);
+	DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
+	TargetDataLine microphone;
+	SourceDataLine speakers;
+	// model downloaded from https://alphacephei.com/vosk/models
+	//Model model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-0.22/");
+	//Model model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-daanzu-20200905-lgraph/");
+	Model model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-daanzu-20200905/");
+	
+	Recognizer recognizer = new Recognizer(model, 120000)
+	
 
 	public GPTInterface(String APIKey) {
 		this.API_KEY = APIKey;
-
+		LibVosk.setLogLevel(LogLevel.DEBUG);
 	}
 
 	public String request(String phrase) throws IOException {
 		return request(phrase, 0.7f);
+	}
+	
+	public String promptFromMicrophone() {
+		microphone = (TargetDataLine) AudioSystem.getLine(info);
+		microphone.open(format);
+		microphone.start();
+
+		//ByteArrayOutputStream out = new ByteArrayOutputStream();
+		int numBytesRead;
+		int CHUNK_SIZE = 1024;
+		int bytesRead = 0;
+
+		//DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, format);
+		//speakers = (SourceDataLine) AudioSystem.getLine(dataLineInfo);
+		//speakers.open(format);
+		//speakers.start();
+		byte[] b = new byte[4096];
+		println "Listening..."
+		String result="";
+		long start = System.currentTimeMillis()
+		try{
+			while (((System.currentTimeMillis()-start)<30000) && !Thread.interrupted()) {
+				Thread.sleep(1);
+				numBytesRead = microphone.read(b, 0, CHUNK_SIZE);
+				bytesRead += numBytesRead;
+
+				//out.write(b, 0, numBytesRead);
+
+				//speakers.write(b, 0, numBytesRead);
+
+				if (recognizer.acceptWaveForm(b, numBytesRead)) {
+					result=recognizer.getResult()
+					break;
+				} else {
+					//System.out.println(recognizer.getPartialResult());
+				}
+			}
+		}catch(Throwable t){
+			t.printStackTrace()
+		}
+		System.out.println(result);
+		//speakers.drain();
+		//speakers.close();
+		microphone.close();
+		Type STTType = new TypeToken<HashMap<String, String>>() {}.getType();
+
+		HashMap<String, String> db = gson.fromJson(result, STTType);
+		String dbGet = db.get("text")
+		if(dbGet==null)
+			dbGet="What is my fortune?"
+		return dbGet;
 	}
 	/*
 	 * '{
@@ -105,9 +189,9 @@ public class GPTInterface {
 	 */
 	public String request(String phrase, float randomness) throws IOException {
 		if(Math.random()>0.5)
-			phrase="Pretend you are a bad fortuine teller. Keep your response less than "+(maxSize*0.5)+" characters. As a Fortune teller respond to: "+phrase
+			phrase="Pretend you are a fortuine teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. Respond to: "+phrase
 		else
-			phrase="Pretend you are a thoughtful Fortune teller. Keep your response less than "+(maxSize*0.5)+" charecters. As a Fortune teller make a thoughtful response to: "+phrase
+			phrase="Pretend you are a Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. Respond to: "+phrase
 
 		String requestBody = String.format("{\"model\":\"%s\",\"messages\":\"%s\",\"temperature\":%f}", AI_MODEL_NAME, phrase, randomness);
 		HashMap<String,Object> message = new HashMap();
@@ -303,10 +387,12 @@ AudioPlayer.setThreshhold(600/65535.0)
 AudioPlayer.setLowerThreshhold(100/65535.0)
 double voice =300
 double echo = 0.85
+BowlerKernel.speak("What do you wish to know?", 100, 0, voice, echo, 1.0,sp)
+String prompt = gpt.promptFromMicrophone();
 new Thread({
-	BowlerKernel.speak("I am contacting the spirit world...", 200, 0, voice, echo, 1.0,sp)
+	BowlerKernel.speak("I am contacting the spirit world...", 100, 0, voice, echo, 1.0,sp)
 }).start()
-response  = gpt.request("What does the future hold for me?",0.9)
+response  = gpt.request(prompt,0.9)
 println "\n\nResponse\n"+response
 BowlerKernel.speak(response, 100, 0, voice, echo, 1.0,sp)
 running=false
