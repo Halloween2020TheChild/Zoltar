@@ -1,5 +1,9 @@
 @Grab(group='net.java.dev.jna', module='jna', version='5.7.0')
 @Grab(group='com.alphacephei', module='vosk', version='0.3.45')
+@Grab(group='org.openpnp', module='opencv', version='4.7.0-0')
+
+import org.bytedeco.opencv.opencv_core.*;
+import org.bytedeco.opencv.opencv_imgproc.*;
 
 import java.io.FileInputStream;
 import java.io.BufferedInputStream;
@@ -41,6 +45,7 @@ import com.neuronrobotics.bowlerstudio.creature.MobileBaseCadManager
 import com.neuronrobotics.bowlerstudio.creature.MobileBaseLoader
 import com.neuronrobotics.bowlerstudio.BowlerKernel
 import com.neuronrobotics.bowlerstudio.BowlerStudio
+import com.neuronrobotics.bowlerstudio.BowlerStudioController
 import com.neuronrobotics.sdk.addons.kinematics.AbstractLink
 import com.neuronrobotics.sdk.addons.kinematics.DHParameterKinematics
 import com.neuronrobotics.sdk.addons.kinematics.MobileBase
@@ -67,6 +72,42 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
+
+import org.opencv.core.CvType;
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
+import org.opencv.core.Point;
+import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.CascadeClassifier;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.awt.image.WritableRaster;
+
+import java.io.FileNotFoundException;
+import javafx.application.Application;
+import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.Group;
+import javafx.scene.Scene;
+import javafx.scene.control.Tab
+import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
+
+import org.opencv.videoio.VideoCapture;
+
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
+import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.CascadeClassifier;
+import org.opencv.objdetect.Objdetect;
+import org.opencv.videoio.VideoCapture;
+
 boolean regen=false;
 MobileBase base=DeviceManager.getSpecificDevice( "Standard6dof",{
 	//If the device does not exist, prompt for the connection
@@ -94,7 +135,12 @@ if(regen) {
 DHParameterKinematics arm = base.getAllDHChains().get(0);
 MobileBase head = arm.getSlaveMobileBase(5)
 AbstractLink mouth =head.getAllDHChains().get(0).getAbstractLink(0)
-
+try {
+	nu.pattern.OpenCV.loadLocally()
+}catch(Throwable t) {
+	BowlerStudio.printStackTrace(t)
+	return
+}
 public class GPTInterface {
 	Alert a;
 	public final String AI_MODEL_NAME = "gpt-3.5-turbo";
@@ -119,11 +165,21 @@ public class GPTInterface {
 	Model model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-daanzu-20200905/");
 
 	Recognizer recognizer = new Recognizer(model, 120000)
+	VideoCapture capture = new VideoCapture(0);
+	// face cascade classifier
+	CascadeClassifier faceCascade = new CascadeClassifier();
+	File fileFromGit = ScriptingEngine.fileFromGit("https://github.com/CommonWealthRobotics/harr-cascade-archive.git", "resources/haarcascades/haarcascade_frontalcatface_extended.xml")
+	int absoluteFaceSize=0;
+	Mat matrix =new Mat();
+	WritableImage img = null;
 
-
+	
 	public GPTInterface(String APIKey) {
 		this.API_KEY = APIKey;
 		LibVosk.setLogLevel(LogLevel.DEBUG);
+		faceCascade.load(fileFromGit.getAbsolutePath());
+		capture.open(0)
+		getFaces()
 	}
 
 	public String request(String phrase) throws IOException {
@@ -184,6 +240,61 @@ public class GPTInterface {
 			result="What is my fortune?"
 		return result;
 	}
+
+	public Rect[] getFaces() {
+		if( capture.isOpened()) {
+			//println "Camera Open"
+			// If there is next video frame
+			if (capture.read(matrix)) {
+				MatOfRect faces = new MatOfRect();
+				Mat grayFrame = new Mat();
+				// face cascade classifier
+				// convert the frame in gray scale
+				Imgproc.cvtColor(matrix, grayFrame, Imgproc.COLOR_BGR2GRAY);
+				// equalize the frame histogram to improve the result
+				Imgproc.equalizeHist(grayFrame, grayFrame);
+
+				// compute minimum face size (20% of the frame height, in our case)
+				if (absoluteFaceSize == 0)
+				{
+					int height = grayFrame.rows();
+					if (Math.round(height * 0.2f) > 0)
+					{
+						absoluteFaceSize = Math.round(height * 0.2f);
+					}
+				}
+
+				// detect faces
+				faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE,
+						new Size(absoluteFaceSize, absoluteFaceSize), new Size());
+
+				Rect[] facesArray = faces.toArray();
+				for (int i = 0; i < facesArray.length; i++) {
+					Imgproc.rectangle(matrix, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0), 3);
+					break;// only the first
+				}
+
+
+				println "Capture success"
+				// Creating BuffredImage from the matrix
+				BufferedImage image = new BufferedImage(matrix.width(),
+						matrix.height(), BufferedImage.TYPE_3BYTE_BGR);
+
+				WritableRaster raster = image.getRaster();
+				DataBufferByte dataBuffer = (DataBufferByte) raster.getDataBuffer();
+				byte[] data = dataBuffer.getData();
+				matrix.get(0, 0, data);
+				// Creating the Writable Image
+				if (img==null)
+					img = SwingFXUtils.toFXImage(image, null);
+				else
+					SwingFXUtils.toFXImage(image, img);
+				return facesArray
+			}
+		}
+		return [] as Rect[]
+	}
+
 	/*
 	 * '{
 	 "model": "gpt-3.5-turbo",
@@ -236,6 +347,10 @@ public class GPTInterface {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	public void close() {
+		capture.release();
+		println "Clean Exit from robot controller"
 	}
 }
 
@@ -294,100 +409,108 @@ def fixVector(double[] jointSpaceVect,DHParameterKinematics arm ) {
 		}
 	}
 }
-println "Loading API key from "+keyLocation
-String content = new String(Files.readAllBytes(Paths.get(keyLocation)));
-println "API key: "+content
-GPTInterface gpt = new GPTInterface(content)
-running =true
-response=null
-msLoop=16
-indexAnimationLoop=0
-numStepsPerLoop=2000/msLoop
 enum AnimationMode{
 	spiritWorld,
 	facetrack
 }
-
-AnimationMode mode =AnimationMode.facetrack;
-new Thread({
-
-	while(running) {
-		Thread.sleep(msLoop)
-		if(gpt.status != gpt.laststatus) {
-			gpt.laststatus=gpt.status;
-			boolean isMouthOpen = (gpt.laststatus==AudioStatus.attack)
-			mouth.setTargetEngineeringUnits(isMouthOpen?-20.0:0);
-			mouth.flush(0);
-		}
-		double unitVextorOfNow=((double) indexAnimationLoop)/((double) numStepsPerLoop)
-		double sinVal = Math.sin(unitVextorOfNow*Math.PI*2)
-		double cosVal = Math.cos(unitVextorOfNow*Math.PI*2)
-
-		if(mode ==AnimationMode.facetrack) {
-			sinVal=0
-			cosVal=0
-		}
-		TransformNR changed=new TransformNR()
-		changed.setX(170+(30))
-
-
-		def headRnage=30
-		def analogy = 0
-		def analogz = 35
-		changed.setZ(200+analogz*cosVal)
-		changed.setY(analogy)
-		def analogup = sinVal*headRnage *1.5
-
-		changed.setRotation(new RotationNR(0,179.96+analogup,-50.79))
-		TransformNR tilted= new TransformNR(0,0,0, RotationNR.getRotationZ(-90))
-		changed=changed.times(tilted)
-
-		double[] jointSpaceVect = arm.inverseKinematics(arm.inverseOffset(changed));
-
-		fixVector(jointSpaceVect,arm)
-		double bestsecs = arm.getBestTime(jointSpaceVect);
-		double normalsecs = ((double)msLoop)/1000.0
-		def vect;
-		if(bestsecs>normalsecs) {
-			double percentpossible = normalsecs/bestsecs*2
-
-			TransformNR starttr=arm.getCurrentTaskSpaceTransform()
-			TransformNR delta = starttr.inverse().times(changed);
-			TransformNR scaled = delta.scale(percentpossible)
-			TransformNR newTR= starttr.times(scaled)
-			vect = arm.inverseKinematics(arm.inverseOffset(newTR));
-			fixVector(vect,arm)
-			TransformNR finaltr= arm.forwardOffset( arm.forwardKinematics(vect))
-			if(!arm.checkTaskSpaceTransform(finaltr)) {
-				println "\n\npercentage "+percentpossible
-				println "Speed capped\t"+jointSpaceVect
-				println "to\t\t\t"+vect
-				println "changed"+changed
-				println "starttr"+starttr
-				println "delta"+delta
-				println "scaled"+scaled
-				println "newTR"+newTR
-				println "ERROR, cant get to "+newTR
-				//continue;
-			}
-		}else
-			vect = jointSpaceVect
-		msActual=normalsecs*1000
-		try {
-			//vect[6]=trig;
-		}catch(Throwable t) {
-			//BowlerStudio.printStackTrace(t)
-		}
-		arm.setDesiredJointSpaceVector(vect, normalsecs);
-
-		indexAnimationLoop+=1;
-		if(indexAnimationLoop>=numStepsPerLoop) {
-			indexAnimationLoop=0;
-		}
-	}
-	println "Zoltar animation thread exit clean"
-}).start()
+GPTInterface gpt
 try {
+	println "Loading API key from "+keyLocation
+	String content = new String(Files.readAllBytes(Paths.get(keyLocation)));
+	println "API key: "+content
+	gpt = new GPTInterface(content)
+	
+	running =true
+	response=null
+	msLoop=16
+	indexAnimationLoop=0
+	numStepsPerLoop=2000/msLoop
+	
+	Tab t=new Tab("Imace capture ");
+	t.setContent(new ImageView(gpt.img))
+	BowlerStudioController.addObject(t, null);
+
+	AnimationMode mode =AnimationMode.facetrack;
+	new Thread({
+
+		while(running) {
+			Thread.sleep(msLoop)
+			if(gpt.status != gpt.laststatus) {
+				gpt.laststatus=gpt.status;
+				boolean isMouthOpen = (gpt.laststatus==AudioStatus.attack)
+				mouth.setTargetEngineeringUnits(isMouthOpen?-20.0:0);
+				mouth.flush(0);
+			}
+			double unitVextorOfNow=((double) indexAnimationLoop)/((double) numStepsPerLoop)
+			double sinVal = Math.sin(unitVextorOfNow*Math.PI*2)
+			double cosVal = Math.cos(unitVextorOfNow*Math.PI*2)
+
+			if(mode ==AnimationMode.facetrack) {
+				Rect[] faces= gpt.getFaces()
+				sinVal=0
+				cosVal=0
+			}
+			TransformNR changed=new TransformNR()
+			changed.setX(170+(30))
+
+
+			def headRnage=30
+			def analogy = 0
+			def analogz = 35
+			changed.setZ(200+analogz*cosVal)
+			changed.setY(analogy)
+			def analogup = sinVal*headRnage *1.5
+
+			changed.setRotation(new RotationNR(0,179.96+analogup,-50.79))
+			TransformNR tilted= new TransformNR(0,0,0, RotationNR.getRotationZ(-90))
+			changed=changed.times(tilted)
+
+			double[] jointSpaceVect = arm.inverseKinematics(arm.inverseOffset(changed));
+
+			fixVector(jointSpaceVect,arm)
+			double bestsecs = arm.getBestTime(jointSpaceVect);
+			double normalsecs = ((double)msLoop)/1000.0
+			def vect;
+			if(bestsecs>normalsecs) {
+				double percentpossible = normalsecs/bestsecs*2
+
+				TransformNR starttr=arm.getCurrentTaskSpaceTransform()
+				TransformNR delta = starttr.inverse().times(changed);
+				TransformNR scaled = delta.scale(percentpossible)
+				TransformNR newTR= starttr.times(scaled)
+				vect = arm.inverseKinematics(arm.inverseOffset(newTR));
+				fixVector(vect,arm)
+				TransformNR finaltr= arm.forwardOffset( arm.forwardKinematics(vect))
+				if(!arm.checkTaskSpaceTransform(finaltr)) {
+					println "\n\npercentage "+percentpossible
+					println "Speed capped\t"+jointSpaceVect
+					println "to\t\t\t"+vect
+					println "changed"+changed
+					println "starttr"+starttr
+					println "delta"+delta
+					println "scaled"+scaled
+					println "newTR"+newTR
+					println "ERROR, cant get to "+newTR
+					//continue;
+				}
+			}else
+				vect = jointSpaceVect
+			msActual=normalsecs*1000
+			try {
+				//vect[6]=trig;
+			}catch(Throwable tf) {
+				//BowlerStudio.printStackTrace(t)
+			}
+			arm.setDesiredJointSpaceVector(vect, normalsecs);
+
+			indexAnimationLoop+=1;
+			if(indexAnimationLoop>=numStepsPerLoop) {
+				indexAnimationLoop=0;
+			}
+		}
+		println "Zoltar animation thread exit clean"
+	}).start()
+
 	ISpeakingProgress sp ={double percent,AudioStatus status->
 		if(status==AudioStatus.release||status==AudioStatus.sustain)
 			return
@@ -396,7 +519,7 @@ try {
 
 	AudioPlayer.setThreshhold(600/65535.0)
 	AudioPlayer.setLowerThreshhold(100/65535.0)
-	double voice =300
+	double voice =301
 	double echo = 0.85
 	mode =AnimationMode.facetrack
 	BowlerKernel.speak("What do you wish to know?", 100, 0, voice, 1, 1.0,sp)
@@ -410,12 +533,13 @@ try {
 	mode =AnimationMode.facetrack
 	println "\n\nResponse\n"+response
 	initialPrompt.join()
-	BowlerKernel.speak(response, 100, 0, voice, echo, 1.0,sp)
+	BowlerKernel.speak(response, 100, 0, voice, 1, 1.0,sp)
 }catch(Throwable t) {
 	t.printStackTrace()
 }
 running=false
 mouth.setTargetEngineeringUnits(0);
+gpt.close()
 
 //Platform.runLater( {gpt.a.close();})
 
