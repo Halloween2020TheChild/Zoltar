@@ -299,9 +299,19 @@ response=null
 msLoop=16
 indexAnimationLoop=0
 numStepsPerLoop=2000/msLoop
+enum AnimationMode{
+	spiritWorld,
+	facetrack
+}
+
+AnimationMode mode =AnimationMode.facetrack;
 new Thread({
 
 	while(running) {
+		if(response!=null) {
+			
+			mode =AnimationMode.facetrack;
+		}
 		Thread.sleep(msLoop)
 		if(gpt.status != gpt.laststatus) {
 			gpt.laststatus=gpt.status;
@@ -313,63 +323,63 @@ new Thread({
 		double sinVal = Math.sin(unitVextorOfNow*Math.PI*2)
 		double cosVal = Math.cos(unitVextorOfNow*Math.PI*2)
 
-		if(response!=null) {
+		if(mode ==AnimationMode.facetrack) {
 			sinVal=0
 			cosVal=0
 		}
-			TransformNR changed=new TransformNR()
-			changed.setX(170+(30))
+		TransformNR changed=new TransformNR()
+		changed.setX(170+(30))
 
 
-			def headRnage=30
-			def analogy = 0
-			def analogz = 35
-			changed.setZ(200+analogz*cosVal)
-			changed.setY(analogy)
-			def analogup = sinVal*headRnage *1.5
+		def headRnage=30
+		def analogy = 0
+		def analogz = 35
+		changed.setZ(200+analogz*cosVal)
+		changed.setY(analogy)
+		def analogup = sinVal*headRnage *1.5
 
-			changed.setRotation(new RotationNR(0,179.96+analogup,-50.79))
-			TransformNR tilted= new TransformNR(0,0,0, RotationNR.getRotationZ(-90))
-			changed=changed.times(tilted)
+		changed.setRotation(new RotationNR(0,179.96+analogup,-50.79))
+		TransformNR tilted= new TransformNR(0,0,0, RotationNR.getRotationZ(-90))
+		changed=changed.times(tilted)
 
-			double[] jointSpaceVect = arm.inverseKinematics(arm.inverseOffset(changed));
+		double[] jointSpaceVect = arm.inverseKinematics(arm.inverseOffset(changed));
 
-			fixVector(jointSpaceVect,arm)
-			double bestsecs = arm.getBestTime(jointSpaceVect);
-			double normalsecs = ((double)msLoop)/1000.0
-			def vect;
-			if(bestsecs>normalsecs) {
-				double percentpossible = normalsecs/bestsecs*2
+		fixVector(jointSpaceVect,arm)
+		double bestsecs = arm.getBestTime(jointSpaceVect);
+		double normalsecs = ((double)msLoop)/1000.0
+		def vect;
+		if(bestsecs>normalsecs) {
+			double percentpossible = normalsecs/bestsecs*2
 
-				TransformNR starttr=arm.getCurrentTaskSpaceTransform()
-				TransformNR delta = starttr.inverse().times(changed);
-				TransformNR scaled = delta.scale(percentpossible)
-				TransformNR newTR= starttr.times(scaled)
-				vect = arm.inverseKinematics(arm.inverseOffset(newTR));
-				fixVector(vect,arm)
-				TransformNR finaltr= arm.forwardOffset( arm.forwardKinematics(vect))
-				if(!arm.checkTaskSpaceTransform(finaltr)) {
-					println "\n\npercentage "+percentpossible
-					println "Speed capped\t"+jointSpaceVect
-					println "to\t\t\t"+vect
-					println "changed"+changed
-					println "starttr"+starttr
-					println "delta"+delta
-					println "scaled"+scaled
-					println "newTR"+newTR
-					println "ERROR, cant get to "+newTR
-					//continue;
-				}
-			}else
-				vect = jointSpaceVect
-			msActual=normalsecs*1000
-			try {
-				//vect[6]=trig;
-			}catch(Throwable t) {
-				//BowlerStudio.printStackTrace(t)
+			TransformNR starttr=arm.getCurrentTaskSpaceTransform()
+			TransformNR delta = starttr.inverse().times(changed);
+			TransformNR scaled = delta.scale(percentpossible)
+			TransformNR newTR= starttr.times(scaled)
+			vect = arm.inverseKinematics(arm.inverseOffset(newTR));
+			fixVector(vect,arm)
+			TransformNR finaltr= arm.forwardOffset( arm.forwardKinematics(vect))
+			if(!arm.checkTaskSpaceTransform(finaltr)) {
+				println "\n\npercentage "+percentpossible
+				println "Speed capped\t"+jointSpaceVect
+				println "to\t\t\t"+vect
+				println "changed"+changed
+				println "starttr"+starttr
+				println "delta"+delta
+				println "scaled"+scaled
+				println "newTR"+newTR
+				println "ERROR, cant get to "+newTR
+				//continue;
 			}
-			arm.setDesiredJointSpaceVector(vect, normalsecs);
-		
+		}else
+			vect = jointSpaceVect
+		msActual=normalsecs*1000
+		try {
+			//vect[6]=trig;
+		}catch(Throwable t) {
+			//BowlerStudio.printStackTrace(t)
+		}
+		arm.setDesiredJointSpaceVector(vect, normalsecs);
+
 		indexAnimationLoop+=1;
 		if(indexAnimationLoop>=numStepsPerLoop) {
 			indexAnimationLoop=0;
@@ -387,13 +397,17 @@ AudioPlayer.setThreshhold(600/65535.0)
 AudioPlayer.setLowerThreshhold(100/65535.0)
 double voice =300
 double echo = 0.85
+mode =AnimationMode.facetrack
 BowlerKernel.speak("What do you wish to know?", 100, 0, voice, echo, 1.0,sp)
 String prompt = gpt.promptFromMicrophone();
-new Thread({
-	BowlerKernel.speak("I am contacting the spirit world...", 100, 0, voice, echo, 1.0,sp)
-}).start()
+mode =AnimationMode.spiritWorld
+Thread initialPrompt=new Thread({
+	BowlerKernel.speak("I am contacting the spirit world about "+prompt, 200, 0, voice, echo, 1.0,sp)
+})
+initialPrompt.start()
 response  = gpt.request(prompt,0.9)
 println "\n\nResponse\n"+response
+initialPrompt.join()
 BowlerKernel.speak(response, 100, 0, voice, echo, 1.0,sp)
 running=false
 //Platform.runLater( {gpt.a.close();})
