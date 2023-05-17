@@ -106,9 +106,9 @@ public class GPTInterface {
 	int maxSize = 240
 	AudioStatus status;
 	AudioStatus laststatus
-	
-	
-	
+
+
+
 	AudioFormat format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 60000, 16, 2, 4, 44100, false);
 	DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
 	TargetDataLine microphone;
@@ -117,9 +117,9 @@ public class GPTInterface {
 	//Model model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-0.22/");
 	//Model model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-daanzu-20200905-lgraph/");
 	Model model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-daanzu-20200905/");
-	
+
 	Recognizer recognizer = new Recognizer(model, 120000)
-	
+
 
 	public GPTInterface(String APIKey) {
 		this.API_KEY = APIKey;
@@ -129,7 +129,7 @@ public class GPTInterface {
 	public String request(String phrase) throws IOException {
 		return request(phrase, 0.7f);
 	}
-	
+
 	public String promptFromMicrophone() {
 		microphone = (TargetDataLine) AudioSystem.getLine(info);
 		microphone.open(format);
@@ -146,8 +146,9 @@ public class GPTInterface {
 		//speakers.start();
 		byte[] b = new byte[4096];
 		println "Listening..."
-		String result="";
+		String result=null;
 		long start = System.currentTimeMillis()
+		Type STTType = new TypeToken<HashMap<String, String>>() {}.getType();
 		try{
 			while (((System.currentTimeMillis()-start)<30000) && !Thread.interrupted()) {
 				Thread.sleep(1);
@@ -160,7 +161,13 @@ public class GPTInterface {
 
 				if (recognizer.acceptWaveForm(b, numBytesRead)) {
 					result=recognizer.getResult()
-					break;
+					HashMap<String, String> db = gson.fromJson(result, STTType);
+					result = db.get("text")
+					if(result.length()>2)
+						break;
+					else {
+						println "Listening..."
+					}
 				} else {
 					//System.out.println(recognizer.getPartialResult());
 				}
@@ -172,13 +179,10 @@ public class GPTInterface {
 		//speakers.drain();
 		//speakers.close();
 		microphone.close();
-		Type STTType = new TypeToken<HashMap<String, String>>() {}.getType();
 
-		HashMap<String, String> db = gson.fromJson(result, STTType);
-		String dbGet = db.get("text")
-		if(dbGet==null)
-			dbGet="What is my fortune?"
-		return dbGet;
+		if(result==null)
+			result="What is my fortune?"
+		return result;
 	}
 	/*
 	 * '{
@@ -227,7 +231,7 @@ public class GPTInterface {
 			HashMap<String, Object> messageContent = firstChoice.get("message")
 			String ret = messageContent.get("content").toString()
 			println ret
-			
+
 			return ret
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -308,10 +312,6 @@ AnimationMode mode =AnimationMode.facetrack;
 new Thread({
 
 	while(running) {
-		if(response!=null) {
-			
-			mode =AnimationMode.facetrack;
-		}
 		Thread.sleep(msLoop)
 		if(gpt.status != gpt.laststatus) {
 			gpt.laststatus=gpt.status;
@@ -387,29 +387,36 @@ new Thread({
 	}
 	println "Zoltar animation thread exit clean"
 }).start()
-ISpeakingProgress sp ={double percent,AudioStatus status->
-	if(status==AudioStatus.release||status==AudioStatus.sustain)
-		return
-	gpt.status=status;
-}
+try {
+	ISpeakingProgress sp ={double percent,AudioStatus status->
+		if(status==AudioStatus.release||status==AudioStatus.sustain)
+			return
+		gpt.status=status;
+	}
 
-AudioPlayer.setThreshhold(600/65535.0)
-AudioPlayer.setLowerThreshhold(100/65535.0)
-double voice =300
-double echo = 0.85
-mode =AnimationMode.facetrack
-BowlerKernel.speak("What do you wish to know?", 100, 0, voice, echo, 1.0,sp)
-String prompt = gpt.promptFromMicrophone();
-mode =AnimationMode.spiritWorld
-Thread initialPrompt=new Thread({
-	BowlerKernel.speak("I am contacting the spirit world about "+prompt, 200, 0, voice, echo, 1.0,sp)
-})
-initialPrompt.start()
-response  = gpt.request(prompt,0.9)
-println "\n\nResponse\n"+response
-initialPrompt.join()
-BowlerKernel.speak(response, 100, 0, voice, echo, 1.0,sp)
+	AudioPlayer.setThreshhold(600/65535.0)
+	AudioPlayer.setLowerThreshhold(100/65535.0)
+	double voice =300
+	double echo = 0.85
+	mode =AnimationMode.facetrack
+	BowlerKernel.speak("What do you wish to know?", 100, 0, voice, 1, 1.0,sp)
+	String prompt = gpt.promptFromMicrophone();
+	mode =AnimationMode.spiritWorld
+	Thread initialPrompt=new Thread({
+		BowlerKernel.speak("Spirit World! Answer Me! "+prompt, 200, 0, voice, echo, 1.0,sp)
+	})
+	initialPrompt.start()
+	response  = gpt.request(prompt,0.9)
+	mode =AnimationMode.facetrack
+	println "\n\nResponse\n"+response
+	initialPrompt.join()
+	BowlerKernel.speak(response, 100, 0, voice, echo, 1.0,sp)
+}catch(Throwable t) {
+	t.printStackTrace()
+}
 running=false
+mouth.setTargetEngineeringUnits(0);
+
 //Platform.runLater( {gpt.a.close();})
 
 
