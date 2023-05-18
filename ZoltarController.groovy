@@ -265,18 +265,23 @@ public class GPTInterface {
 				}
 
 				// detect faces
-				faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE,
+//				faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE,
+//						new Size(absoluteFaceSize, absoluteFaceSize), new Size());
+
+				// detect faces - tester JMS
+				faceCascade.detectMultiScale(grayFrame, faces, 1.1, 10, 0 | Objdetect.CASCADE_SCALE_IMAGE,
 						new Size(absoluteFaceSize, absoluteFaceSize), new Size());
 
 				Rect[] facesArray = faces.toArray();
 				for (int i = 0; i < facesArray.length; i++) {
 					Imgproc.rectangle(matrix, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0), 3);
-					break;// only the first
+					//break;// only the first
 				}
 
 
-				println "Capture success"
+				//println "Capture success"
 				// Creating BuffredImage from the matrix
+				//matrix = grayFrame	// SUPER temp	-JMS
 				BufferedImage image = new BufferedImage(matrix.width(),
 						matrix.height(), BufferedImage.TYPE_3BYTE_BGR);
 
@@ -413,6 +418,7 @@ enum AnimationMode{
 	spiritWorld,
 	facetrack
 }
+Tab t=new Tab()
 GPTInterface gpt
 try {
 	println "Loading API key from "+keyLocation
@@ -426,7 +432,7 @@ try {
 	indexAnimationLoop=0
 	numStepsPerLoop=2000/msLoop
 	
-	Tab t=new Tab("Imace capture ");
+	t=new Tab("Imace capture ");
 	t.setContent(new ImageView(gpt.img))
 	BowlerStudioController.addObject(t, null);
 
@@ -534,13 +540,13 @@ try {
 	println "\n\nResponse\n"+response
 	initialPrompt.join()
 	BowlerKernel.speak(response, 100, 0, voice, 1, 1.0,sp)
-}catch(Throwable t) {
-	t.printStackTrace()
+}catch(Throwable tr) {
+	tr.printStackTrace()
 }
 running=false
 mouth.setTargetEngineeringUnits(0);
 gpt.close()
-
+BowlerStudioController.removeObject(t)
 //Platform.runLater( {gpt.a.close();})
 
 
