@@ -168,7 +168,8 @@ public class GPTInterface {
 	VideoCapture capture = new VideoCapture(0);
 	// face cascade classifier
 	CascadeClassifier faceCascade = new CascadeClassifier();
-	File fileFromGit = ScriptingEngine.fileFromGit("https://github.com/CommonWealthRobotics/harr-cascade-archive.git", "resources/haarcascades/haarcascade_frontalface_default.xml")
+	File fileFromGit = ScriptingEngine.fileFromGit("https://github.com/CommonWealthRobotics/harr-cascade-archive.git", 
+										"resources/haarcascades/haarcascade_frontalface_default.xml")
 	int absoluteFaceSize=0;
 	Mat matrix =new Mat();
 	WritableImage img = null;
