@@ -168,7 +168,7 @@ public class GPTInterface {
 	VideoCapture capture = new VideoCapture(0);
 	// face cascade classifier
 	CascadeClassifier faceCascade = new CascadeClassifier();
-	File fileFromGit = ScriptingEngine.fileFromGit("https://github.com/CommonWealthRobotics/harr-cascade-archive.git", "resources/haarcascades/haarcascade_frontalcatface_extended.xml")
+	File fileFromGit = ScriptingEngine.fileFromGit("https://github.com/CommonWealthRobotics/harr-cascade-archive.git", "resources/haarcascades/haarcascade_frontalface_default.xml")
 	int absoluteFaceSize=0;
 	Mat matrix =new Mat();
 	WritableImage img = null;
@@ -523,8 +523,8 @@ try {
 		gpt.status=status;
 	}
 
-	AudioPlayer.setThreshhold(600/65535.0)
-	AudioPlayer.setLowerThreshhold(100/65535.0)
+	AudioPlayer.setThreshhold(400/65535.0)
+	AudioPlayer.setLowerThreshhold(50/65535.0)
 	double voice =301
 	double echo = 0.85
 	mode =AnimationMode.facetrack
