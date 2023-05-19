@@ -310,7 +310,7 @@ public class GPTInterface {
 	 */
 	public String request(String phrase, float randomness) throws IOException {
 		if(Math.random()>0.5)
-			phrase="Pretend you are a fortuine teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. Respond to: "+phrase
+			phrase="Pretend you are a fortuine teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
 		else
 			phrase="Pretend you are a Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. Respond to: "+phrase
 
@@ -542,7 +542,7 @@ try {
 	initialPrompt.join()
 	BowlerKernel.speak(response, 100, 0, voice, 1, 1.0,sp)
 }catch(Throwable tr) {
-	tr.printStackTrace()
+	BowlerStudio.printStackTrace(tr)
 }
 running=false
 mouth.setTargetEngineeringUnits(0);
