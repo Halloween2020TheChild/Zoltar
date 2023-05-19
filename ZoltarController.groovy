@@ -524,16 +524,16 @@ try {
 		gpt.status=status;
 	}
 
-	AudioPlayer.setThreshhold(400/65535.0)
+	AudioPlayer.setThreshhold(600/65535.0)
 	AudioPlayer.setLowerThreshhold(50/65535.0)
-	double voice =301
+	double voice =500
 	double echo = 0.85
 	mode =AnimationMode.facetrack
 	BowlerKernel.speak("What do you wish to know?", 100, 0, voice, 1, 1.0,sp)
 	String prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
 	Thread initialPrompt=new Thread({
-		BowlerKernel.speak("Spirit World! Answer Me! "+prompt, 200, 0, voice, echo, 1.0,sp)
+		BowlerKernel.speak("Spirit World! Answer Me! "+prompt, 400, 0, voice, echo, 1.0,sp)
 	})
 	initialPrompt.start()
 	response  = gpt.request(prompt,0.9)
