@@ -319,11 +319,6 @@ public class GPTInterface {
 						absoluteFaceSize = Math.round(height * 0.2f);
 					}
 				}
-
-				// detect faces
-				//				faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE,
-				//						new Size(absoluteFaceSize, absoluteFaceSize), new Size());
-
 				// detect faces - tester JMS
 				faceCascade.detectMultiScale(grayFrame, faces, 1.1, 10, 0 | Objdetect.CASCADE_SCALE_IMAGE,
 						new Size(absoluteFaceSize, absoluteFaceSize), new Size());
