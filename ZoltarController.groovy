@@ -1,6 +1,9 @@
 @Grab(group='net.java.dev.jna', module='jna', version='5.7.0')
 @Grab(group='com.alphacephei', module='vosk', version='0.3.45')
 @Grab(group='org.openpnp', module='opencv', version='4.7.0-0')
+@Grab(group='ai.djl', module='api', version='0.4.0')
+@Grab(group='ai.djl', module='repository', version='0.4.0')
+@Grab(group='ai.djl.pytorch', module='pytorch-model-zoo', version='0.4.0')
 
 import org.bytedeco.opencv.opencv_core.*;
 import org.bytedeco.opencv.opencv_imgproc.*;
@@ -108,6 +111,56 @@ import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
 import org.opencv.videoio.VideoCapture;
 
+import ai.djl.Application;
+import ai.djl.MalformedModelException;
+import ai.djl.inference.Predictor;
+import ai.djl.modality.cv.output.DetectedObjects;
+import ai.djl.modality.cv.util.BufferedImageUtils;
+import ai.djl.repository.zoo.Criteria;
+import ai.djl.repository.zoo.ModelNotFoundException;
+import ai.djl.repository.zoo.ModelZoo;
+import ai.djl.repository.zoo.ZooModel;
+import ai.djl.training.util.ProgressBar;
+import ai.djl.translate.TranslateException;
+
+import com.neuronrobotics.bowlerkernel.djl.ImagePredictorType;
+import com.neuronrobotics.bowlerkernel.djl.PredictorFactory;
+
+import org.opencv.videoio.VideoCapture;
+
+import com.neuronrobotics.bowlerkernel.djl.FaceDetectionTranslator
+import com.neuronrobotics.bowlerkernel.djl.ImagePredictorType
+import com.neuronrobotics.bowlerkernel.djl.PredictorFactory
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
+import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.CascadeClassifier;
+import org.opencv.objdetect.Objdetect;
+import org.opencv.videoio.VideoCapture;
+
+import ai.djl.Application;
+import ai.djl.MalformedModelException;
+import ai.djl.inference.Predictor;
+import ai.djl.modality.cv.output.DetectedObjects;
+import ai.djl.modality.cv.output.Rectangle
+import ai.djl.modality.cv.output.DetectedObjects.DetectedObject
+import ai.djl.modality.cv.util.BufferedImageUtils;
+import ai.djl.repository.zoo.Criteria;
+import ai.djl.repository.zoo.ModelNotFoundException;
+import ai.djl.repository.zoo.ModelZoo;
+import ai.djl.repository.zoo.ZooModel;
+import ai.djl.training.util.ProgressBar;
+import ai.djl.translate.TranslateException;
+import ai.djl.modality.cv.Image
+import ai.djl.modality.cv.ImageFactory
+import ai.djl.modality.cv.output.BoundingBox;
+
+import com.neuronrobotics.bowlerkernel.djl.ImagePredictorType;
+import com.neuronrobotics.bowlerkernel.djl.PredictorFactory;
+
 boolean regen=false;
 MobileBase base=DeviceManager.getSpecificDevice( "Standard6dof",{
 	//If the device does not exist, prompt for the connection
@@ -168,12 +221,14 @@ public class GPTInterface {
 	VideoCapture capture = new VideoCapture(0);
 	// face cascade classifier
 	CascadeClassifier faceCascade = new CascadeClassifier();
-	File fileFromGit = ScriptingEngine.fileFromGit("https://github.com/CommonWealthRobotics/harr-cascade-archive.git", 
-										"resources/haarcascades/haarcascade_frontalface_default.xml")
+	File fileFromGit = ScriptingEngine.fileFromGit("https://github.com/CommonWealthRobotics/harr-cascade-archive.git",
+	"resources/haarcascades/haarcascade_frontalface_default.xml")
 	int absoluteFaceSize=0;
 	Mat matrix =new Mat();
 	WritableImage img = null;
-
+	
+	ZooModel<Image, DetectedObjects> mlmodel  = PredictorFactory.imageContentsFactory(ImagePredictorType.yolov5);
+	Predictor<BufferedImage, DetectedObjects> predictor = mlmodel.newPredictor();
 	
 	public GPTInterface(String APIKey) {
 		this.API_KEY = APIKey;
@@ -266,8 +321,8 @@ public class GPTInterface {
 				}
 
 				// detect faces
-//				faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE,
-//						new Size(absoluteFaceSize, absoluteFaceSize), new Size());
+				//				faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE,
+				//						new Size(absoluteFaceSize, absoluteFaceSize), new Size());
 
 				// detect faces - tester JMS
 				faceCascade.detectMultiScale(grayFrame, faces, 1.1, 10, 0 | Objdetect.CASCADE_SCALE_IMAGE,
@@ -310,7 +365,7 @@ public class GPTInterface {
 	 */
 	public String request(String phrase, float randomness) throws IOException {
 		if(Math.random()>0.5)
-			phrase="Pretend you are a fortuine teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
+			phrase="Pretend you are a fortune teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
 		else
 			phrase="Pretend you are a Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. Respond to: "+phrase
 
@@ -426,13 +481,13 @@ try {
 	String content = new String(Files.readAllBytes(Paths.get(keyLocation)));
 	println "API key: "+content
 	gpt = new GPTInterface(content)
-	
+
 	running =true
 	response=null
 	msLoop=16
 	indexAnimationLoop=0
 	numStepsPerLoop=2000/msLoop
-	
+
 	t=new Tab("Imace capture ");
 	t.setContent(new ImageView(gpt.img))
 	BowlerStudioController.addObject(t, null);
