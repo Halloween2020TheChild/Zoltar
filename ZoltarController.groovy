@@ -226,10 +226,10 @@ public class GPTInterface {
 	int absoluteFaceSize=0;
 	Mat matrix =new Mat();
 	WritableImage img = null;
-	
+
 	ZooModel<Image, DetectedObjects> mlmodel  = PredictorFactory.imageContentsFactory(ImagePredictorType.yolov5);
 	Predictor<BufferedImage, DetectedObjects> predictor = mlmodel.newPredictor();
-	
+
 	public GPTInterface(String APIKey) {
 		this.API_KEY = APIKey;
 		LibVosk.setLogLevel(LogLevel.DEBUG);
@@ -358,38 +358,41 @@ public class GPTInterface {
 	 "temperature": 0.7
 	 }'
 	 */
-	public String request(String phrase, float randomness) throws IOException {
-		if(Math.random()>0.5)
-			phrase="Pretend you are a fortune teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
-		else
-			phrase="Pretend you are a Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. Respond to: "+phrase
 
-		String requestBody = String.format("{\"model\":\"%s\",\"messages\":\"%s\",\"temperature\":%f}", AI_MODEL_NAME, phrase, randomness);
-		HashMap<String,Object> message = new HashMap();
-		HashMap<String,String> messages = new HashMap();
-		messages.put("role", "user")
-		messages.put("content", phrase)
-		message.put("model", AI_MODEL_NAME)
-		message.put("temperature", randomness)
-		message.put("messages", Arrays.asList(messages))
-
-		requestBody = gson.toJson(message, TT_mapStringString);
-
-
-		println requestBody
-		OkHttpClient client = new OkHttpClient()
-
-		MediaType mediaType = MediaType.parse("application/json");
-		RequestBody body = RequestBody.create(mediaType, requestBody);
-
-		Request request = new Request.Builder()
-				.url(CHATGPT_API_URL)
-				.method("POST", body)
-				.addHeader("Content-Type", "application/json")
-				.addHeader("Authorization", "Bearer " + API_KEY)
-				.build();
-
+	public String request(String phrase, float randomness,int retrys) throws IOException {
+		if(retrys==0)
+			return;
 		try {
+			if(Math.random()>0.5)
+				phrase="Pretend you are a fortune teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
+			else
+				phrase="Pretend you are a Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. Respond to: "+phrase
+
+			String requestBody = String.format("{\"model\":\"%s\",\"messages\":\"%s\",\"temperature\":%f}", AI_MODEL_NAME, phrase, randomness);
+			HashMap<String,Object> message = new HashMap();
+			HashMap<String,String> messages = new HashMap();
+			messages.put("role", "user")
+			messages.put("content", phrase)
+			message.put("model", AI_MODEL_NAME)
+			message.put("temperature", randomness)
+			message.put("messages", Arrays.asList(messages))
+
+			requestBody = gson.toJson(message, TT_mapStringString);
+
+
+			println requestBody
+			OkHttpClient client = new OkHttpClient()
+
+			MediaType mediaType = MediaType.parse("application/json");
+			RequestBody body = RequestBody.create(mediaType, requestBody);
+
+			Request request = new Request.Builder()
+					.url(CHATGPT_API_URL)
+					.method("POST", body)
+					.addHeader("Content-Type", "application/json")
+					.addHeader("Authorization", "Bearer " + API_KEY)
+					.build();
+
 			Response response = client.newCall(request).execute();
 			String jsonString = response.body().string();
 			HashMap<String, Object> database = gson.fromJson(jsonString, TT_mapStringString);
@@ -398,16 +401,20 @@ public class GPTInterface {
 			HashMap<String, Object> messageContent = firstChoice.get("message")
 			String ret = messageContent.get("content").toString()
 			println ret
-
+			if(ret==null)
+				throw new RuntimeException("No response!");
 			return ret
-		} catch (Exception e) {
-			e.printStackTrace();
+
+		}catch(Throwable t) {
+			BowlerStudio.printStackTrace(t)
+			return request(phrase, randomness, retrys-1)
 		}
 	}
 	public void close() {
 		capture.release();
 		println "Clean Exit from robot controller"
 	}
+
 }
 
 String keyLocation = ScriptingEngine.getWorkspace().getAbsolutePath()+"/gpt-key.txt"
@@ -576,7 +583,10 @@ try {
 
 	AudioPlayer.setThreshhold(600/65535.0)
 	AudioPlayer.setLowerThreshhold(50/65535.0)
-	double voice =800
+	double voice =864
+	// 805 maybe?
+	// 857 scottish?
+	// 864 scottish??
 	double echo = 0.85
 	mode =AnimationMode.facetrack
 	BowlerKernel.speak("What do you wish to know?", 100, 0, voice, 1, 1.0,sp)
@@ -586,7 +596,7 @@ try {
 		BowlerKernel.speak("Spirit World! Answer Me! "+prompt, 400, 0, voice, echo, 1.0,sp)
 	})
 	initialPrompt.start()
-	response  = gpt.request(prompt,0.9)
+	response  = gpt.request(prompt,0.9,5)
 	println "\n\nResponse\n"+response
 	initialPrompt.join()
 	mode =AnimationMode.facetrack
