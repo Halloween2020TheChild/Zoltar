@@ -515,13 +515,13 @@ try {
 				cosVal=0
 			}
 			TransformNR changed=new TransformNR()
-			changed.setX(170+(30))
+			changed.setX(136)
 
 
 			def headRnage=30
 			def analogy = 0
 			def analogz = 35
-			changed.setZ(200+analogz*cosVal)
+			changed.setZ(260+analogz*cosVal)
 			changed.setY(analogy)
 			def analogup = sinVal*headRnage *1.5
 

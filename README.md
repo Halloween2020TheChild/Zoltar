@@ -30,3 +30,27 @@ docker build .
 You will need a ChatGPT API key. It will prompt you to enter it when it is needed. 
 
 to generate one for yourself, go to: https://platform.openai.com/account/api-keys
+
+# Technologies
+
+IK/FK control of robot (BowlerStudio)
+
+Realtime Robot coms (SimplePacketComs)
+
+TTS Legacy (MaryTTS)
+
+TTS Advanced (Coqui->Docker->OkHTTP)
+
+Fast Face detect (OpenCV Haar Cascade)
+
+Face orientation (Ultranet)
+
+Unique Face identification (face_feature)
+
+Scene Object identification (Yolov5)
+
+Voice detection (Vosk)
+
+Q/A response engine (openAI's API, ChatGPT-3.5) This is the only off-board neural network
+
+
