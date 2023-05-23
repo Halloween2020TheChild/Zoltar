@@ -275,9 +275,13 @@ public class GPTInterface {
 		return result;
 	}
 	public double lookVector() {
-		return noseCenterOfFace.getX()/((double)width)/2.0-0.5
+		try {
+			return noseCenterOfFace.getX()/((double)width)/2.0-0.5
+		}catch(Exception ex) {
+			return 0;
+		}
 	}
-	
+
 	public Rect[] getFaces() {
 		if( capture.isOpened()) {
 			//println "Camera Open"
@@ -315,7 +319,7 @@ public class GPTInterface {
 				DataBufferByte dataBuffer = (DataBufferByte) raster.getDataBuffer();
 				byte[] data = dataBuffer.getData();
 				matrix.get(0, 0, data);
-				
+
 				DetectedObjects detection = predictor.predict(factory.fromImage(image));
 				List<DetectedObject> items = detection.items();
 				Rect[] facesArray = new Rect[items.size()];
@@ -409,9 +413,9 @@ public class GPTInterface {
 			return;
 		try {
 			if(Math.random()>0.5)
-				phrase="Pretend you are a fortune teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
+				phrase="Pretend you are a brittish fortune teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
 			else
-				phrase="Pretend you are a Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. Respond to: "+phrase
+				phrase="Pretend you are a brittish Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. Respond to: "+phrase
 
 			String requestBody = String.format("{\"model\":\"%s\",\"messages\":\"%s\",\"temperature\":%f}", AI_MODEL_NAME, phrase, randomness);
 			HashMap<String,Object> message = new HashMap();
@@ -555,7 +559,7 @@ try {
 			if(mode ==AnimationMode.facetrack) {
 				Rect[] faces= gpt.getFaces()
 				double look = gpt.lookVector()
-				println "Look "+look
+				//println "Look "+look
 				tiltangle = gpt.tiltAngle*1.5
 				sinVal=look*2;
 				cosVal=0
@@ -571,7 +575,7 @@ try {
 			changed.setY(analogy)
 			def analogup = sinVal*headRnage *1.5
 			def rot = 179.96+analogup
-			println "Rotation "+rot
+			//println "Rotation "+rot
 			changed.setRotation(new RotationNR(0,rot,-45))
 			TransformNR tilted= new TransformNR(0,0,0, RotationNR.getRotationZ(-90 +tiltangle))
 			changed=changed.times(tilted)
