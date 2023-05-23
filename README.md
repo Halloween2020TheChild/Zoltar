@@ -26,3 +26,7 @@ cd CoquiDocker
 docker build .
 
 ```
+
+You will need a ChatGPT API key. It will prompt you to enter it when it is needed. 
+
+to generate one for yourself, go to: https://platform.openai.com/account/api-keys
