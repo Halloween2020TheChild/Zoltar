@@ -576,7 +576,7 @@ try {
 
 	AudioPlayer.setThreshhold(600/65535.0)
 	AudioPlayer.setLowerThreshhold(50/65535.0)
-	double voice =801
+	double voice =800
 	double echo = 0.85
 	mode =AnimationMode.facetrack
 	BowlerKernel.speak("What do you wish to know?", 100, 0, voice, 1, 1.0,sp)
