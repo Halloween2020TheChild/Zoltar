@@ -576,7 +576,7 @@ try {
 
 	AudioPlayer.setThreshhold(600/65535.0)
 	AudioPlayer.setLowerThreshhold(50/65535.0)
-	double voice =500
+	double voice =801
 	double echo = 0.85
 	mode =AnimationMode.facetrack
 	BowlerKernel.speak("What do you wish to know?", 100, 0, voice, 1, 1.0,sp)
@@ -587,9 +587,9 @@ try {
 	})
 	initialPrompt.start()
 	response  = gpt.request(prompt,0.9)
-	mode =AnimationMode.facetrack
 	println "\n\nResponse\n"+response
 	initialPrompt.join()
+	mode =AnimationMode.facetrack
 	BowlerKernel.speak(response, 100, 0, voice, 1, 1.0,sp)
 }catch(Throwable tr) {
 	BowlerStudio.printStackTrace(tr)
