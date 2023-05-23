@@ -1,12 +1,5 @@
-@Grab(group='net.java.dev.jna', module='jna', version='5.7.0')
 @Grab(group='com.alphacephei', module='vosk', version='0.3.45')
 @Grab(group='org.openpnp', module='opencv', version='4.7.0-0')
-@Grab(group='ai.djl', module='api', version='0.4.0')
-@Grab(group='ai.djl', module='repository', version='0.4.0')
-@Grab(group='ai.djl.pytorch', module='pytorch-model-zoo', version='0.4.0')
-
-import org.bytedeco.opencv.opencv_core.*;
-import org.bytedeco.opencv.opencv_imgproc.*;
 
 import java.io.FileInputStream;
 import java.io.BufferedInputStream;
@@ -62,6 +55,14 @@ import com.squareup.okhttp.Request
 import com.squareup.okhttp.RequestBody
 import com.squareup.okhttp.Response
 
+import ai.djl.inference.Predictor
+import ai.djl.modality.cv.Image
+import ai.djl.modality.cv.ImageFactory
+import ai.djl.modality.cv.output.BoundingBox
+import ai.djl.modality.cv.output.DetectedObjects
+import ai.djl.modality.cv.output.DetectedObjects.DetectedObject
+import ai.djl.pytorch.jni.JniUtils
+import ai.djl.repository.zoo.ZooModel
 import javafx.application.Platform
 import javafx.scene.control.Alert
 import javafx.scene.control.Alert.AlertType
@@ -111,26 +112,13 @@ import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
 import org.opencv.videoio.VideoCapture;
 
-import ai.djl.Application;
-import ai.djl.MalformedModelException;
-import ai.djl.inference.Predictor;
-import ai.djl.modality.cv.output.DetectedObjects;
-import ai.djl.modality.cv.util.BufferedImageUtils;
-import ai.djl.repository.zoo.Criteria;
-import ai.djl.repository.zoo.ModelNotFoundException;
-import ai.djl.repository.zoo.ModelZoo;
-import ai.djl.repository.zoo.ZooModel;
-import ai.djl.training.util.ProgressBar;
-import ai.djl.translate.TranslateException;
+
 
 import com.neuronrobotics.bowlerkernel.djl.ImagePredictorType;
 import com.neuronrobotics.bowlerkernel.djl.PredictorFactory;
 
 import org.opencv.videoio.VideoCapture;
 
-import com.neuronrobotics.bowlerkernel.djl.FaceDetectionTranslator
-import com.neuronrobotics.bowlerkernel.djl.ImagePredictorType
-import com.neuronrobotics.bowlerkernel.djl.PredictorFactory
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Rect;
@@ -141,25 +129,6 @@ import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
 import org.opencv.videoio.VideoCapture;
 
-import ai.djl.Application;
-import ai.djl.MalformedModelException;
-import ai.djl.inference.Predictor;
-import ai.djl.modality.cv.output.DetectedObjects;
-import ai.djl.modality.cv.output.Rectangle
-import ai.djl.modality.cv.output.DetectedObjects.DetectedObject
-import ai.djl.modality.cv.util.BufferedImageUtils;
-import ai.djl.repository.zoo.Criteria;
-import ai.djl.repository.zoo.ModelNotFoundException;
-import ai.djl.repository.zoo.ModelZoo;
-import ai.djl.repository.zoo.ZooModel;
-import ai.djl.training.util.ProgressBar;
-import ai.djl.translate.TranslateException;
-import ai.djl.modality.cv.Image
-import ai.djl.modality.cv.ImageFactory
-import ai.djl.modality.cv.output.BoundingBox;
-
-import com.neuronrobotics.bowlerkernel.djl.ImagePredictorType;
-import com.neuronrobotics.bowlerkernel.djl.PredictorFactory;
 
 boolean regen=false;
 MobileBase base=DeviceManager.getSpecificDevice( "Standard6dof",{
@@ -175,16 +144,16 @@ MobileBase base=DeviceManager.getSpecificDevice( "Standard6dof",{
 	regen=true;
 	return m
 })
-if(regen) {
-	MobileBaseCadManager get = MobileBaseCadManager.get( base)
-	get.setConfigurationViewerMode(false)
-	get.generateCad()
-	Thread.sleep(100);
-	while(get.getProcesIndictor().get()<1){
-		println "Waiting for cad to get to 1:"+get.getProcesIndictor().get()
-		ThreadUtil.wait(1000)
-	}
-}
+//if(regen) {
+//	MobileBaseCadManager get = MobileBaseCadManager.get( base)
+//	get.setConfigurationViewerMode(false)
+//	get.generateCad()
+//	Thread.sleep(100);
+//	while(get.getProcesIndictor().get()<1){
+//		println "Waiting for cad to get to 1:"+get.getProcesIndictor().get()
+//		ThreadUtil.wait(1000)
+//	}
+//}
 DHParameterKinematics arm = base.getAllDHChains().get(0);
 MobileBase head = arm.getSlaveMobileBase(5)
 AbstractLink mouth =head.getAllDHChains().get(0).getAbstractLink(0)
@@ -195,8 +164,12 @@ try {
 	return
 }
 public class GPTInterface {
+	private int width
+	private int height
+	private double tiltAngle
 	Alert a;
 	public final String AI_MODEL_NAME = "gpt-3.5-turbo";
+	Tab t=new Tab()
 
 	private String API_KEY;
 	private static final String CHATGPT_API_URL = "https://api.openai.com/v1/chat/completions";
@@ -227,19 +200,24 @@ public class GPTInterface {
 	Mat matrix =new Mat();
 	WritableImage img = null;
 
-	ZooModel<Image, DetectedObjects> mlmodel  = PredictorFactory.imageContentsFactory(ImagePredictorType.yolov5);
-	Predictor<BufferedImage, DetectedObjects> predictor = mlmodel.newPredictor();
-
+	ZooModel<Image, DetectedObjects> mlmodel;
+	Predictor<BufferedImage, DetectedObjects> predictor;
+	ImageFactory factory;
+	int frames=0;
+	ai.djl.modality.cv.output.Point noseCenterOfFace = null
 	public GPTInterface(String APIKey) {
 		this.API_KEY = APIKey;
 		LibVosk.setLogLevel(LogLevel.DEBUG);
 		faceCascade.load(fileFromGit.getAbsolutePath());
 		capture.open(0)
+		factory=ImageFactory.getInstance()
+		mlmodel  = PredictorFactory.imageContentsFactory(ImagePredictorType.ultranet);
+		predictor = mlmodel.newPredictor();
 		getFaces()
 	}
 
 	public String request(String phrase) throws IOException {
-		return request(phrase, 0.7f);
+		return request(phrase, 0.7f,5);
 	}
 
 	public String promptFromMicrophone() {
@@ -296,15 +274,21 @@ public class GPTInterface {
 			result="What is my fortune?"
 		return result;
 	}
-
+	public double lookVector() {
+		return noseCenterOfFace.getX()/((double)width)/2.0-0.5
+	}
+	
 	public Rect[] getFaces() {
 		if( capture.isOpened()) {
 			//println "Camera Open"
 			// If there is next video frame
 			if (capture.read(matrix)) {
+				frames++;
+				//println "Frames "+frames
 				MatOfRect faces = new MatOfRect();
 				Mat grayFrame = new Mat();
 				// face cascade classifier
+
 				// convert the frame in gray scale
 				Imgproc.cvtColor(matrix, grayFrame, Imgproc.COLOR_BGR2GRAY);
 				// equalize the frame histogram to improve the result
@@ -313,26 +297,17 @@ public class GPTInterface {
 				// compute minimum face size (20% of the frame height, in our case)
 				if (absoluteFaceSize == 0)
 				{
-					int height = grayFrame.rows();
+					height = grayFrame.rows();
+					width =grayFrame.cols();
 					if (Math.round(height * 0.2f) > 0)
 					{
 						absoluteFaceSize = Math.round(height * 0.2f);
 					}
 				}
-				// detect faces - tester JMS
-				faceCascade.detectMultiScale(grayFrame, faces, 1.1, 10, 0 | Objdetect.CASCADE_SCALE_IMAGE,
-						new Size(absoluteFaceSize, absoluteFaceSize), new Size());
-
-				Rect[] facesArray = faces.toArray();
-				for (int i = 0; i < facesArray.length; i++) {
-					Imgproc.rectangle(matrix, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0), 3);
-					//break;// only the first
-				}
-
+				// each rectangle in faces is a face: draw them!
 
 				//println "Capture success"
 				// Creating BuffredImage from the matrix
-				//matrix = grayFrame	// SUPER temp	-JMS
 				BufferedImage image = new BufferedImage(matrix.width(),
 						matrix.height(), BufferedImage.TYPE_3BYTE_BGR);
 
@@ -340,11 +315,81 @@ public class GPTInterface {
 				DataBufferByte dataBuffer = (DataBufferByte) raster.getDataBuffer();
 				byte[] data = dataBuffer.getData();
 				matrix.get(0, 0, data);
+				
+				DetectedObjects detection = predictor.predict(factory.fromImage(image));
+				List<DetectedObject> items = detection.items();
+				Rect[] facesArray = new Rect[items.size()];
+				for (int detectionIndex = 0; detectionIndex < items.size(); detectionIndex++) {
+					DetectedObject c = items.get(detectionIndex);
+					BoundingBox cGetBoundingBox = c.getBoundingBox();
+					def topLeft = cGetBoundingBox.getPoint();
+					def rect = cGetBoundingBox.getBounds();
+					Iterator<ai.djl.modality.cv.output.Point> path = cGetBoundingBox.getPath().iterator();
+					ArrayList<ai.djl.modality.cv.output.Point> list = new ArrayList<>();
+					// sort into an ordered list
+					for(ai.djl.modality.cv.output.Point p:path) {
+						boolean added=false;
+						for(int j=0;j<list.size();j++) {
+							if(p.getY()<list.get(j).getY()) {
+								list.add(j, p);
+								added=true;
+								break;
+							}
+						}
+						if(!added)
+							list.add(p)
+					}
+					if(list.size()>=5) {
+
+						def left = list.get(0)
+						def right=list.get(1)
+
+						if(left.getY()!=right.getY()) {
+							double y=left.getY()-right.getY()
+							double x=left.getX()-right.getX()
+							tiltAngle=Math.toDegrees(Math.atan2(y, x))
+							if(tiltAngle<-90) {
+								tiltAngle+=180
+							}
+							//println "Tilt angle = "+tiltAngle
+						}else {
+							// angle is 0, they are the same
+							tiltAngle = 0
+						}
+						noseCenterOfFace = list.get(2)
+					}
+					//lm.get
+					facesArray[detectionIndex]=new Rect(topLeft.getX()*matrix.width(),topLeft.getY()*matrix.height(),rect.getWidth()*matrix.width() ,rect.getHeight()*matrix.height())
+					//System.out.println(c);
+					//System.out.println("Name: "+c.getClassName() +" probability "+c.getProbability()+" center x "+topLeft.getX()+" center y "+topLeft.getY()+" rect h"+rect.getHeight()+" rect w"+rect.getWidth() );
+					Imgproc.rectangle(matrix, facesArray[detectionIndex].tl(), facesArray[detectionIndex].br(), new Scalar(0, 255, 0), 3);
+					Imgproc.putText(matrix, c.getClassName(), new Point(topLeft.getX()*matrix.width(),topLeft.getY()*matrix.height()-5), 3,1,  new Scalar(0, 255, 0));
+					if(list.size()>3) {
+						for(int j=0;j<2;j++) {
+							ai.djl.modality.cv.output.Point p= list.get(j)
+							Imgproc.circle(matrix, new Point(p.getX(),p.getY()), 3, new Scalar(255, 0, 0))
+						}
+						ai.djl.modality.cv.output.Point n= list.get(2)
+						Imgproc.circle(matrix, new Point(n.getX(),n.getY()), 5, new Scalar(0, 0, 255))
+						for(int j=list.size()-2;j<list.size();j++) {
+							ai.djl.modality.cv.output.Point p= list.get(j)
+							Imgproc.circle(matrix, new Point(p.getX(),p.getY()), 3, new Scalar(255, 0, 255))
+						}
+					}
+				}
+
+				matrix.get(0, 0, data);
+				//println detection
+
 				// Creating the Writable Image
-				if (img==null)
+				if(img==null) {
 					img = SwingFXUtils.toFXImage(image, null);
-				else
+					t=new Tab("Image capture");
+					t.setContent(new ImageView(img))
+					BowlerStudioController.addObject(t, null);
+				}else{
 					SwingFXUtils.toFXImage(image, img);
+				}
 				return facesArray
 			}
 		}
@@ -412,6 +457,7 @@ public class GPTInterface {
 	}
 	public void close() {
 		capture.release();
+		BowlerStudioController.removeObject(t)
 		println "Clean Exit from robot controller"
 	}
 
@@ -476,7 +522,6 @@ enum AnimationMode{
 	spiritWorld,
 	facetrack
 }
-Tab t=new Tab()
 GPTInterface gpt
 try {
 	println "Loading API key from "+keyLocation
@@ -490,13 +535,11 @@ try {
 	indexAnimationLoop=0
 	numStepsPerLoop=2000/msLoop
 
-	t=new Tab("Imace capture ");
-	t.setContent(new ImageView(gpt.img))
-	BowlerStudioController.addObject(t, null);
+
 
 	AnimationMode mode =AnimationMode.facetrack;
 	new Thread({
-
+		JniUtils.setGraphExecutorOptimize(false);
 		while(running) {
 			Thread.sleep(msLoop)
 			if(gpt.status != gpt.laststatus) {
@@ -508,10 +551,13 @@ try {
 			double unitVextorOfNow=((double) indexAnimationLoop)/((double) numStepsPerLoop)
 			double sinVal = Math.sin(unitVextorOfNow*Math.PI*2)
 			double cosVal = Math.cos(unitVextorOfNow*Math.PI*2)
-
+			double tiltangle=0
 			if(mode ==AnimationMode.facetrack) {
 				Rect[] faces= gpt.getFaces()
-				sinVal=0
+				double look = gpt.lookVector()
+				println "Look "+look
+				tiltangle = gpt.tiltAngle*1.5
+				sinVal=look*2;
 				cosVal=0
 			}
 			TransformNR changed=new TransformNR()
@@ -524,9 +570,10 @@ try {
 			changed.setZ(260+analogz*cosVal)
 			changed.setY(analogy)
 			def analogup = sinVal*headRnage *1.5
-
-			changed.setRotation(new RotationNR(0,179.96+analogup,-50.79))
-			TransformNR tilted= new TransformNR(0,0,0, RotationNR.getRotationZ(-90))
+			def rot = 179.96+analogup
+			println "Rotation "+rot
+			changed.setRotation(new RotationNR(0,rot,-45))
+			TransformNR tilted= new TransformNR(0,0,0, RotationNR.getRotationZ(-90 +tiltangle))
 			changed=changed.times(tilted)
 
 			double[] jointSpaceVect = arm.inverseKinematics(arm.inverseOffset(changed));
@@ -607,7 +654,6 @@ try {
 running=false
 mouth.setTargetEngineeringUnits(0);
 gpt.close()
-BowlerStudioController.removeObject(t)
 //Platform.runLater( {gpt.a.close();})
 
 
