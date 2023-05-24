@@ -550,7 +550,7 @@ try {
 		long timeOfLastBlink=0;
 		long closeTime=80
 		double tiltTarget = 0
-		double tiltIncrement = 2
+		double tiltIncrement = 1
 		while(running) {
 			long durationBetweenBlinks = (Math.random()*3000)+1000
 			Thread.sleep(msLoop)
