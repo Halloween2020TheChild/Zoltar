@@ -551,8 +551,9 @@ try {
 		long closeTime=80
 		double tiltTarget = 0
 		double tiltIncrement = 1
+		long durationBetweenBlinks = (Math.random()*3000)+3000
 		while(running) {
-			long durationBetweenBlinks = (Math.random()*3000)+1000
+			
 			Thread.sleep(msLoop)
 			if(gpt.status != gpt.laststatus) {
 				gpt.laststatus=gpt.status;
@@ -570,6 +571,7 @@ try {
 				if(open) {
 					if(System.currentTimeMillis()-timeOfLastBlink>durationBetweenBlinks) {
 						timeOfLastBlink=System.currentTimeMillis()
+						durationBetweenBlinks = (Math.random()*3000)+3000
 						open=false
 					}
 				}else {
