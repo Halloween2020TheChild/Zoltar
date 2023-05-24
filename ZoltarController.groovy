@@ -157,6 +157,8 @@ MobileBase base=DeviceManager.getSpecificDevice( "Standard6dof",{
 DHParameterKinematics arm = base.getAllDHChains().get(0);
 MobileBase head = arm.getSlaveMobileBase(5)
 AbstractLink mouth =head.getAllDHChains().get(0).getAbstractLink(0)
+AbstractLink eye =head.getAllDHChains().get(1).getAbstractLink(0)
+
 try {
 	nu.pattern.OpenCV.loadLocally()
 }catch(Throwable t) {
@@ -544,7 +546,13 @@ try {
 	AnimationMode mode =AnimationMode.facetrack;
 	new Thread({
 		JniUtils.setGraphExecutorOptimize(false);
+		boolean open=true;
+		long timeOfLastBlink=0;
+		long closeTime=80
+		double tiltTarget = 0
+		double tiltIncrement = 1
 		while(running) {
+			long durationBetweenBlinks = (Math.random()*3000)+1000
 			Thread.sleep(msLoop)
 			if(gpt.status != gpt.laststatus) {
 				gpt.laststatus=gpt.status;
@@ -556,14 +564,41 @@ try {
 			double sinVal = Math.sin(unitVextorOfNow*Math.PI*2)
 			double cosVal = Math.cos(unitVextorOfNow*Math.PI*2)
 			double tiltangle=0
+			Rect[] faces= gpt.getFaces()
+
 			if(mode ==AnimationMode.facetrack) {
-				Rect[] faces= gpt.getFaces()
+				if(open) {
+					if(System.currentTimeMillis()-timeOfLastBlink>durationBetweenBlinks) {
+						timeOfLastBlink=System.currentTimeMillis()
+						open=false
+					}
+				}else {
+					if(System.currentTimeMillis()-timeOfLastBlink>closeTime) {
+						open=true
+					}
+				}
+
+				eye.setTargetEngineeringUnits(open?10.0:-42.0);
+				eye.flush(0);
+
 				double look = gpt.lookVector()
 				//println "Look "+look
-				tiltangle = gpt.tiltAngle*1.5
-				sinVal=look*2;
+				tiltangle = gpt.tiltAngle*0.75
+				sinVal=-look*2-0.5;
 				cosVal=0
+			}else {
+				eye.setTargetEngineeringUnits(-42);
 			}
+			
+			if(tiltangle-tiltTarget>tiltIncrement) {
+				tiltTarget+=tiltIncrement
+			}else 
+			if(tiltangle-tiltTarget<tiltIncrement) {
+				tiltTarget-=tiltIncrement
+			}else {
+				tiltTarget=tiltangle
+			}
+			
 			TransformNR changed=new TransformNR()
 			changed.setX(136)
 
@@ -573,11 +608,11 @@ try {
 			def analogz = 35
 			changed.setZ(260+analogz*cosVal)
 			changed.setY(analogy)
-			def analogup = sinVal*headRnage *1.5
+			def analogup = sinVal*headRnage 
 			def rot = 179.96+analogup
 			//println "Rotation "+rot
 			changed.setRotation(new RotationNR(0,rot,-45))
-			TransformNR tilted= new TransformNR(0,0,0, RotationNR.getRotationZ(-90 +tiltangle))
+			TransformNR tilted= new TransformNR(0,0,0, RotationNR.getRotationZ(-90 +tiltTarget))
 			changed=changed.times(tilted)
 
 			double[] jointSpaceVect = arm.inverseKinematics(arm.inverseOffset(changed));
@@ -656,7 +691,9 @@ try {
 	BowlerStudio.printStackTrace(tr)
 }
 running=false
+Thread.sleep(100)
 mouth.setTargetEngineeringUnits(0);
+eye.setTargetEngineeringUnits(-42.0);
 gpt.close()
 //Platform.runLater( {gpt.a.close();})
 
