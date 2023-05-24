@@ -550,7 +550,7 @@ try {
 		long timeOfLastBlink=0;
 		long closeTime=80
 		double tiltTarget = 0
-		double tiltIncrement = 1
+		double tiltIncrement = 2
 		while(running) {
 			long durationBetweenBlinks = (Math.random()*3000)+1000
 			Thread.sleep(msLoop)
@@ -583,7 +583,7 @@ try {
 
 				double look = gpt.lookVector()
 				//println "Look "+look
-				tiltangle = gpt.tiltAngle*0.75
+				tiltangle = gpt.tiltAngle*1.25
 				sinVal=-look*2-0.5;
 				cosVal=0
 			}else {
