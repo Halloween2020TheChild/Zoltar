@@ -42,6 +42,7 @@ import com.neuronrobotics.bowlerstudio.creature.MobileBaseLoader
 import com.neuronrobotics.bowlerstudio.BowlerKernel
 import com.neuronrobotics.bowlerstudio.BowlerStudio
 import com.neuronrobotics.bowlerstudio.BowlerStudioController
+import com.neuronrobotics.bowlerstudio.IAudioProcessingLambda
 import com.neuronrobotics.sdk.addons.kinematics.AbstractLink
 import com.neuronrobotics.sdk.addons.kinematics.DHParameterKinematics
 import com.neuronrobotics.sdk.addons.kinematics.MobileBase
@@ -158,7 +159,79 @@ DHParameterKinematics arm = base.getAllDHChains().get(0);
 MobileBase head = arm.getSlaveMobileBase(5)
 AbstractLink mouth =head.getAllDHChains().get(0).getAbstractLink(0)
 AbstractLink eye =head.getAllDHChains().get(1).getAbstractLink(0)
+AudioPlayer.setIntegralDepth(20)
+AudioPlayer.setThreshhold(0.01)
+AudioPlayer.setLowerThreshhold(0.005)
+AudioPlayer.setIntegralGain(1);
+AudioPlayer.setDerivitiveGain(1);
+double globalAmp=0;
+double globalCurrentRoll=0;
+double globalCurrentDeriv=0;
+double globalCurrentCalculated=0;
+boolean update=false;
 
+AudioPlayer.setLambda( new IAudioProcessingLambda() {
+			// code reference from the face application https://github.com/adafruit/Adafruit_Learning_System_Guides/blob/main/AdaVoice/adavoice_face/adavoice_face.ino
+			int xfadeDistance=16;
+			double [] samples = new int[xfadeDistance];
+			int xfadeIndex=0;
+			boolean stare=true;
+			double previousValue = 0
+			@Override
+			public AudioStatus update(AudioStatus currentStatus, double amplitudeUnitVector, double currentRollingAverage,
+					double currentDerivitiveTerm) {
+				if(stare) {
+					stare=false;
+					for(int i=0;i<xfadeDistance;i++) {
+						samples[i]=currentRollingAverage;
+					}
+					previousValue=amplitudeUnitVector;
+				}
+				double index=samples[xfadeIndex];
+				samples[xfadeIndex]=currentRollingAverage;
+				xfadeIndex++;
+				if(xfadeIndex==xfadeDistance) {
+					xfadeIndex=0;
+				}
+				globalCurrentDeriv=(amplitudeUnitVector-previousValue)*AudioPlayer.getDerivitiveGain();
+				previousValue=amplitudeUnitVector;
+				double val = (currentRollingAverage+index)/2*globalCurrentDeriv;
+				globalAmp=amplitudeUnitVector;
+				globalCurrentRoll=currentRollingAverage;
+
+				globalCurrentCalculated=val;
+				update=true;
+				switch(currentStatus) {
+					case AudioStatus.attack:
+						if(val>AudioPlayer.getThreshhold()) {
+							currentStatus=AudioStatus.sustain;
+						}
+						break;
+					case AudioStatus.decay:
+						if(val<AudioPlayer.getLowerThreshhold()) {
+							currentStatus=AudioStatus.release;
+						}
+						break;
+					case AudioStatus.release:
+						if(val>AudioPlayer.getThreshhold()) {
+							currentStatus=AudioStatus.attack;
+						}
+						break;
+					case AudioStatus.sustain:
+						if(val<AudioPlayer.getLowerThreshhold()) {
+							currentStatus=AudioStatus.decay;
+						}
+						break;
+					default:
+						break;
+				}
+				return currentStatus;
+			}
+
+			@Override
+			public void startProcessing() {
+			}
+		});
 try {
 	nu.pattern.OpenCV.loadLocally()
 }catch(Throwable t) {
