@@ -765,9 +765,6 @@ try {
 			return
 		gpt.status=status;
 	}
-
-	AudioPlayer.setThreshhold(600/65535.0)
-	AudioPlayer.setLowerThreshhold(50/65535.0)
 	double voice =857
 	// 805 maybe?
 	// 857 laid back scottish?
