@@ -170,6 +170,35 @@ double globalCurrentDeriv=0;
 double globalCurrentCalculated=0;
 boolean update=false;
 
+class RollingAverage {
+	private int depth;
+	private double [] samples
+	boolean stare=true;
+	double rollingSum =0
+	int index=0
+	public RollingAverage(int depth) {
+		this.depth = depth;
+		samples=new double[depth];
+	}
+	double get(double current) {
+		if(stare) {
+			stare=false;
+			rollingSum=0;
+			for(int i=0;i<depth;i++) {
+				samples[i]=current;
+				rollingSum+=current;
+			}
+		}
+		rollingSum-=samples[index];
+		samples[index]=current;
+		rollingSum+=current;
+		index++;
+		if(index==depth)
+			index=0;
+		return rollingSum/((double)depth)
+	}
+}
+
 AudioPlayer.setLambda( new IAudioProcessingLambda() {
 			// code reference from the face application https://github.com/adafruit/Adafruit_Learning_System_Guides/blob/main/AdaVoice/adavoice_face/adavoice_face.ino
 			int xfadeDistance=16;
@@ -602,6 +631,7 @@ enum AnimationMode{
 	facetrack
 }
 GPTInterface gpt
+
 try {
 	println "Loading API key from "+keyLocation
 	String content = new String(Files.readAllBytes(Paths.get(keyLocation)));
@@ -623,8 +653,11 @@ try {
 		long timeOfLastBlink=0;
 		long closeTime=80
 		double tiltTarget = 0
-		double tiltIncrement = 1
+		double tiltIncrement = 3
 		long durationBetweenBlinks = (Math.random()*3000)+3000
+		RollingAverage lookAvg = new RollingAverage(5)
+		RollingAverage tiltAvg = new RollingAverage(5)
+		
 		while(running) {
 			
 			Thread.sleep(msLoop)
@@ -656,22 +689,13 @@ try {
 				eye.setTargetEngineeringUnits(open?10.0:-42.0);
 				eye.flush(0);
 
-				double look = gpt.lookVector()
+				double look = lookAvg.get(gpt.lookVector())
 				//println "Look "+look
-				tiltangle = gpt.tiltAngle*1.25
+				tiltTarget = tiltAvg.get(gpt.tiltAngle*1.25)
 				sinVal=-look*2-0.5;
 				cosVal=0
 			}else {
 				eye.setTargetEngineeringUnits(-42);
-			}
-			
-			if(tiltangle-tiltTarget>tiltIncrement) {
-				tiltTarget+=tiltIncrement
-			}else 
-			if(tiltangle-tiltTarget<tiltIncrement) {
-				tiltTarget-=tiltIncrement
-			}else {
-				tiltTarget=tiltangle
 			}
 			
 			TransformNR changed=new TransformNR()
@@ -751,6 +775,9 @@ try {
 	double echo = 0.85
 	mode =AnimationMode.facetrack
 	BowlerKernel.speak("What do you wish to know?", 100, 0, voice, 1, 1.0,sp)
+//	while(!Thread.interrupted()) {
+//		Thread.sleep(100)
+//	}
 	String prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
 	Thread initialPrompt=new Thread({
