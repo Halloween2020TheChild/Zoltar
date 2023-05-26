@@ -448,7 +448,7 @@ public class GPTInterface {
 			String jsonString = response.body().string();
 			HashMap<String, Object> database = gson.fromJson(jsonString, TT_mapStringString);
 			ArrayList<Object> choices = database.get("choices")
-			HashMap<String, Object> firstChoice = choices.get(choices.size()-1)
+			HashMap<String, Object> firstChoice = choices.get(0)
 			HashMap<String, Object> messageContent = firstChoice.get("message")
 			String ret = messageContent.get("content").toString()
 			println ret
@@ -602,13 +602,13 @@ try {
 			}
 			
 			TransformNR changed=new TransformNR()
-			changed.setX(136)
+			changed.setX(156)
 
 
 			def headRnage=30
 			def analogy = 0
 			def analogz = 35
-			changed.setZ(260+analogz*cosVal)
+			changed.setZ(200+analogz*cosVal)
 			changed.setY(analogy)
 			def analogup = sinVal*headRnage 
 			def rot = 179.96+analogup
@@ -671,7 +671,7 @@ try {
 
 	AudioPlayer.setThreshhold(600/65535.0)
 	AudioPlayer.setLowerThreshhold(50/65535.0)
-	double voice =864
+	double voice =857
 	// 805 maybe?
 	// 857 laid back scottish?
 	// 864 impatient scottish??
