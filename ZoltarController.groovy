@@ -156,6 +156,7 @@ MobileBase base=DeviceManager.getSpecificDevice( "Standard6dof",{
 //	}
 //}
 DHParameterKinematics arm = base.getAllDHChains().get(0);
+arm.homeAllLinks()
 MobileBase head = arm.getSlaveMobileBase(5)
 AbstractLink mouth =head.getAllDHChains().get(0).getAbstractLink(0)
 AbstractLink eye =head.getAllDHChains().get(1).getAbstractLink(0)
@@ -385,7 +386,13 @@ public class GPTInterface {
 			return 0;
 		}
 	}
-
+	public double nodVector() {
+		try {
+			return noseCenterOfFace.getY()/((double)height)/2.0-0.5
+		}catch(Exception ex) {
+			return 0;
+		}
+	}
 	public Rect[] getFaces() {
 		if( capture.isOpened()) {
 			//println "Camera Open"
@@ -517,9 +524,9 @@ public class GPTInterface {
 			return;
 		try {
 			if(Math.random()>0.5)
-				phrase="Pretend you are a brittish fortune teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
+				phrase="Pretend you are a austraillian fortune teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
 			else
-				phrase="Pretend you are a brittish Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. Respond to: "+phrase
+				phrase="Pretend you are a austraillian Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. Respond to: "+phrase
 
 			String requestBody = String.format("{\"model\":\"%s\",\"messages\":\"%s\",\"temperature\":%f}", AI_MODEL_NAME, phrase, randomness);
 			HashMap<String,Object> message = new HashMap();
@@ -657,6 +664,7 @@ try {
 		long durationBetweenBlinks = (Math.random()*3000)+3000
 		RollingAverage lookAvg = new RollingAverage(5)
 		RollingAverage tiltAvg = new RollingAverage(5)
+		RollingAverage nod = new RollingAverage(5)
 		
 		while(running) {
 			
@@ -672,7 +680,7 @@ try {
 			double cosVal = Math.cos(unitVextorOfNow*Math.PI*2)
 			double tiltangle=0
 			Rect[] faces= gpt.getFaces()
-
+			double nodAngle =0
 			if(mode ==AnimationMode.facetrack) {
 				if(open) {
 					if(System.currentTimeMillis()-timeOfLastBlink>durationBetweenBlinks) {
@@ -691,9 +699,10 @@ try {
 
 				double look = lookAvg.get(gpt.lookVector())
 				//println "Look "+look
-				tiltTarget = tiltAvg.get(gpt.tiltAngle*1.25)
+				tiltTarget = tiltAvg.get(gpt.tiltAngle*0.9)
 				sinVal=-look*2-0.5;
 				cosVal=0
+				nodAngle=nod.get(-gpt.nodVector())
 			}else {
 				eye.setTargetEngineeringUnits(-42);
 			}
@@ -709,10 +718,10 @@ try {
 			changed.setY(analogy)
 			def analogup = sinVal*headRnage 
 			def rot = 179.96+analogup
-			//println "Rotation "+rot
-			changed.setRotation(new RotationNR(0,rot,-45))
-			TransformNR tilted= new TransformNR(0,0,0, RotationNR.getRotationZ(-90 +tiltTarget))
-			changed=changed.times(tilted)
+			println "Tilt target "+tiltTarget
+			changed.setRotation(new RotationNR(0,rot,-55+(headRnage*nodAngle)))
+			TransformNR tilted= new TransformNR(0,0,0, RotationNR.getRotationZ(-90 ))
+			changed=changed.times(tilted).times(new TransformNR(0,0,0, new RotationNR(0,-tiltTarget,tiltTarget)))
 
 			double[] jointSpaceVect = arm.inverseKinematics(arm.inverseOffset(changed));
 
@@ -765,16 +774,16 @@ try {
 			return
 		gpt.status=status;
 	}
-	double voice =857
+	double voice =805
 	// 805 maybe?
 	// 857 laid back scottish?
 	// 864 impatient scottish??
 	double echo = 0.85
 	mode =AnimationMode.facetrack
 	BowlerKernel.speak("What do you wish to know?", 100, 0, voice, 1, 1.0,sp)
-//	while(!Thread.interrupted()) {
-//		Thread.sleep(100)
-//	}
+	while(!Thread.interrupted()) {
+		Thread.sleep(100)
+	}
 	String prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
 	Thread initialPrompt=new Thread({
