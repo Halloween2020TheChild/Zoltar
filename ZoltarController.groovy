@@ -201,67 +201,59 @@ class RollingAverage {
 }
 
 AudioPlayer.setLambda( new IAudioProcessingLambda() {
-			// code reference from the face application https://github.com/adafruit/Adafruit_Learning_System_Guides/blob/main/AdaVoice/adavoice_face/adavoice_face.ino
-			int xfadeDistance=16;
-			double [] samples = new int[xfadeDistance];
-			int xfadeIndex=0;
-			boolean stare=true;
-			double previousValue = 0
-			@Override
-			public AudioStatus update(AudioStatus currentStatus, double amplitudeUnitVector, double currentRollingAverage,
-					double currentDerivitiveTerm) {
-				if(stare) {
-					stare=false;
-					for(int i=0;i<xfadeDistance;i++) {
-						samples[i]=currentRollingAverage;
+		// code reference from the face application https://github.com/adafruit/Adafruit_Learning_System_Guides/blob/main/AdaVoice/adavoice_face/adavoice_face.ino
+		int xfadeDistance=16;
+		double [] samples = new double[xfadeDistance];
+		int xfadeIndex=0;
+		boolean stare=true;
+		@Override
+		public AudioStatus update(AudioStatus currentStatus, double amplitudeUnitVector, double currentRollingAverage,
+				double currentDerivitiveTerm, double percent) {
+			if(stare) {
+				stare=false;
+				for(int i=0;i<xfadeDistance;i++) {
+					samples[i]=currentRollingAverage;
+				}
+			}
+			double index=samples[xfadeIndex];
+			samples[xfadeIndex]=currentRollingAverage;
+			xfadeIndex++;
+			if(xfadeIndex==xfadeDistance) {
+				xfadeIndex=0;
+			}
+			double val = (currentRollingAverage+index)/2*currentDerivitiveTerm;
+			switch(currentStatus) {
+				case B_KST_SOUNDS:
+					if(val>AudioPlayer.getThreshhold()) {
+						currentStatus=AudioStatus.D_AA_SOUNDS;
 					}
-					previousValue=amplitudeUnitVector;
-				}
-				double index=samples[xfadeIndex];
-				samples[xfadeIndex]=currentRollingAverage;
-				xfadeIndex++;
-				if(xfadeIndex==xfadeDistance) {
-					xfadeIndex=0;
-				}
-				globalCurrentDeriv=(amplitudeUnitVector-previousValue)*AudioPlayer.getDerivitiveGain();
-				previousValue=amplitudeUnitVector;
-				double val = (currentRollingAverage+index)/2*globalCurrentDeriv;
-				globalAmp=amplitudeUnitVector;
-				globalCurrentRoll=currentRollingAverage;
-
-				globalCurrentCalculated=val;
-				update=true;
-				switch(currentStatus) {
-					case AudioStatus.attack:
-						if(val>AudioPlayer.getThreshhold()) {
-							currentStatus=AudioStatus.sustain;
-						}
-						break;
-					case AudioStatus.decay:
-						if(val<AudioPlayer.getLowerThreshhold()) {
-							currentStatus=AudioStatus.release;
-						}
-						break;
-					case AudioStatus.release:
-						if(val>AudioPlayer.getThreshhold()) {
-							currentStatus=AudioStatus.attack;
-						}
-						break;
-					case AudioStatus.sustain:
-						if(val<AudioPlayer.getLowerThreshhold()) {
-							currentStatus=AudioStatus.decay;
-						}
-						break;
-					default:
-						break;
-				}
-				return currentStatus;
+					break;
+				case G_F_V_SOUNDS:
+					if(val<AudioPlayer.getLowerThreshhold()) {
+						currentStatus=AudioStatus.X_NO_SOUND;
+					}
+					break;
+				case X_NO_SOUND:
+					if(val>AudioPlayer.getThreshhold()) {
+						currentStatus=AudioStatus.B_KST_SOUNDS;
+					}
+					break;
+				case D_AA_SOUNDS:
+					if(val<AudioPlayer.getLowerThreshhold()) {
+						currentStatus=AudioStatus.G_F_V_SOUNDS;
+					}
+					break;
+				default:
+					break;
 			}
+			return currentStatus;
+		}
 
-			@Override
-			public void startProcessing() {
-			}
-		});
+		@Override
+		public void startProcessing(AudioInputStream ais) {
+			stare=true;
+		}
+	});
 try {
 	nu.pattern.OpenCV.loadLocally()
 }catch(Throwable t) {
@@ -663,7 +655,7 @@ try {
 		double tiltIncrement = 3
 		long durationBetweenBlinks = (Math.random()*3000)+3000
 		RollingAverage lookAvg = new RollingAverage(5)
-		RollingAverage tiltAvg = new RollingAverage(5)
+		RollingAverage tiltAvg = new RollingAverage(10)
 		RollingAverage nod = new RollingAverage(5)
 		
 		while(running) {
@@ -671,7 +663,7 @@ try {
 			Thread.sleep(msLoop)
 			if(gpt.status != gpt.laststatus) {
 				gpt.laststatus=gpt.status;
-				boolean isMouthOpen = (gpt.laststatus==AudioStatus.attack)
+				boolean isMouthOpen = status.isOpen()
 				mouth.setTargetEngineeringUnits(isMouthOpen?-20.0:0);
 				mouth.flush(0);
 			}
@@ -679,8 +671,9 @@ try {
 			double sinVal = Math.sin(unitVextorOfNow*Math.PI*2)
 			double cosVal = Math.cos(unitVextorOfNow*Math.PI*2)
 			double tiltangle=0
-			Rect[] faces= gpt.getFaces()
 			double nodAngle =0
+			
+			Rect[] faces= gpt.getFaces()
 			if(mode ==AnimationMode.facetrack) {
 				if(open) {
 					if(System.currentTimeMillis()-timeOfLastBlink>durationBetweenBlinks) {
@@ -718,7 +711,7 @@ try {
 			changed.setY(analogy)
 			def analogup = sinVal*headRnage 
 			def rot = 179.96+analogup
-			println "Tilt target "+tiltTarget
+			//println "Tilt target "+tiltTarget
 			changed.setRotation(new RotationNR(0,rot,-55+(headRnage*nodAngle)))
 			TransformNR tilted= new TransformNR(0,0,0, RotationNR.getRotationZ(-90 ))
 			changed=changed.times(tilted).times(new TransformNR(0,0,0, new RotationNR(0,-tiltTarget,tiltTarget)))
@@ -770,8 +763,6 @@ try {
 	}).start()
 
 	ISpeakingProgress sp ={double percent,AudioStatus status->
-		if(status==AudioStatus.release||status==AudioStatus.sustain)
-			return
 		gpt.status=status;
 	}
 	double voice =805
