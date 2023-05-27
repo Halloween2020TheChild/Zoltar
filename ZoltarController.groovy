@@ -692,8 +692,8 @@ try {
 
 				double look = lookAvg.get(gpt.lookVector())
 				//println "Look "+look
-				tiltTarget = tiltAvg.get(gpt.tiltAngle*0.9)
-				sinVal=-look*2-0.5;
+				tiltTarget = tiltAvg.get(-gpt.tiltAngle*0.9)
+				sinVal=-look*4-1.0;
 				cosVal=0
 				nodAngle=nod.get(-gpt.nodVector())
 			}else {
@@ -704,7 +704,7 @@ try {
 			changed.setX(156)
 
 
-			def headRnage=30
+			def headRnage=40
 			def analogy = 0
 			def analogz = 35
 			changed.setZ(200+analogz*cosVal)
@@ -765,16 +765,14 @@ try {
 	ISpeakingProgress sp ={double percent,AudioStatus status->
 		gpt.status=status;
 	}
-	double voice =805
-	// 805 maybe?
+	double voice =864
+	// 805 mayb64
 	// 857 laid back scottish?
 	// 864 impatient scottish??
 	double echo = 0.85
 	mode =AnimationMode.facetrack
 	BowlerKernel.speak("What do you wish to know?", 100, 0, voice, 1, 1.0,sp)
-	while(!Thread.interrupted()) {
-		Thread.sleep(100)
-	}
+	//while(!Thread.interrupted()) {Thread.sleep(100)}
 	String prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
 	Thread initialPrompt=new Thread({
