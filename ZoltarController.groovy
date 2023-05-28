@@ -250,8 +250,9 @@ AudioPlayer.setLambda( new IAudioProcessingLambda() {
 		}
 
 		@Override
-		public void startProcessing(AudioInputStream ais) {
+		public AudioInputStream startProcessing(AudioInputStream ais) {
 			stare=true;
+			return ais;
 		}
 	});
 try {
@@ -704,7 +705,7 @@ try {
 			changed.setX(156)
 
 
-			def headRnage=40
+			def headRnage=45
 			def analogy = 0
 			def analogz = 35
 			changed.setZ(200+analogz*cosVal)
@@ -772,7 +773,7 @@ try {
 	double echo = 0.85
 	mode =AnimationMode.facetrack
 	BowlerKernel.speak("What do you wish to know?", 100, 0, voice, 1, 1.0,sp)
-	//while(!Thread.interrupted()) {Thread.sleep(100)}
+	while(!Thread.interrupted()) {Thread.sleep(100)}
 	String prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
 	Thread initialPrompt=new Thread({
