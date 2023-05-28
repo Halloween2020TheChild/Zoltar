@@ -129,6 +129,7 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
 import org.opencv.videoio.VideoCapture;
+import com.neuronrobotics.bowlerstudio.lipsync.RhubarbManager;
 
 
 boolean regen=false;
@@ -199,7 +200,7 @@ class RollingAverage {
 		return rollingSum/((double)depth)
 	}
 }
-
+AudioPlayer.setLambda(new RhubarbManager());
 AudioPlayer.setLambda( new IAudioProcessingLambda() {
 		// code reference from the face application https://github.com/adafruit/Adafruit_Learning_System_Guides/blob/main/AdaVoice/adavoice_face/adavoice_face.ino
 		int xfadeDistance=16;
