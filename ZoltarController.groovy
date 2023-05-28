@@ -773,8 +773,9 @@ try {
 	// 864 impatient scottish??
 	double echo = 0.85
 	mode =AnimationMode.facetrack
+	while(!Thread.interrupted()){
 	BowlerKernel.speak("What do you wish to know?", 100, 0, voice, 1, 1.0,sp)
-	while(!Thread.interrupted()) {Thread.sleep(100)}
+	//while(!Thread.interrupted()) {Thread.sleep(100)}
 	String prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
 	Thread initialPrompt=new Thread({
@@ -786,6 +787,7 @@ try {
 	initialPrompt.join()
 	mode =AnimationMode.facetrack
 	BowlerKernel.speak(response, 100, 0, voice, 1, 1.0,sp)
+	}
 }catch(Throwable tr) {
 	BowlerStudio.printStackTrace(tr)
 }
