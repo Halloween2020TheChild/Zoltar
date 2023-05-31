@@ -180,11 +180,18 @@ class RollingAverage {
 	boolean stare=true;
 	double rollingSum =0
 	int index=0
+	double max=-1;
 	public RollingAverage(int depth) {
 		this.depth = depth;
 		samples=new double[depth];
 	}
 	double get(double current) {
+		if(max>0) {
+			if(current>max)
+				current=max;
+			if(current<-max)
+				current=-max;
+		}
 		if(stare) {
 			stare=false;
 			rollingSum=0;
@@ -201,6 +208,7 @@ class RollingAverage {
 			index=0;
 		return rollingSum/((double)depth)
 	}
+	
 }
 AudioPlayer.setLambda(new RhubarbManager());
 
@@ -610,7 +618,8 @@ def fixVector(double[] jointSpaceVect,DHParameterKinematics arm ) {
 }
 enum AnimationMode{
 	spiritWorld,
-	facetrack
+	facetrack,
+	waitForSpeak
 }
 GPTInterface gpt
 
@@ -640,7 +649,7 @@ try {
 		RollingAverage lookAvg = new RollingAverage(5)
 		RollingAverage tiltAvg = new RollingAverage(10)
 		RollingAverage nod = new RollingAverage(5)
-
+		tiltAvg.setMax(30)
 		while(running) {
 
 			Thread.sleep(msLoop)
@@ -749,6 +758,8 @@ try {
 		double isMouthOpen = status.mouthOpenVector()
 		mouth.setTargetEngineeringUnits(isMouthOpen*-10.0);
 		mouth.flush(0);
+		if(mode==AnimationMode.waitForSpeak)
+			mode=AnimationMode.facetrack
 	}
 	double voice =805
 	// 805 mayb64
@@ -768,7 +779,7 @@ try {
 	response  = gpt.request(prompt,0.9,5)
 	println "\n\nResponse\n"+response
 	initialPrompt.join()
-	mode =AnimationMode.facetrack
+	mode =AnimationMode.waitForSpeak
 	BowlerKernel.speak(response, 100, 0, voice, 1, 1.0,sp)
 	//}
 }catch(Throwable tr) {
