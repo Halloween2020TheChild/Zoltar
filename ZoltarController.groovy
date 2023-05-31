@@ -72,6 +72,8 @@ import marytts.LocalMaryInterface
 import marytts.MaryInterface
 import marytts.datatypes.MaryData
 import marytts.exceptions.SynthesisException
+import net.lingala.zip4j.ZipFile
+import net.lingala.zip4j.exception.ZipException
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -157,7 +159,7 @@ MobileBase base=DeviceManager.getSpecificDevice( "Standard6dof",{
 //	}
 //}
 DHParameterKinematics arm = base.getAllDHChains().get(0);
-arm.homeAllLinks()
+//arm.homeAllLinks()
 MobileBase head = arm.getSlaveMobileBase(5)
 AbstractLink mouth =head.getAllDHChains().get(0).getAbstractLink(0)
 AbstractLink eye =head.getAllDHChains().get(1).getAbstractLink(0)
@@ -201,61 +203,7 @@ class RollingAverage {
 	}
 }
 AudioPlayer.setLambda(new RhubarbManager());
-AudioPlayer.setLambda( new IAudioProcessingLambda() {
-		// code reference from the face application https://github.com/adafruit/Adafruit_Learning_System_Guides/blob/main/AdaVoice/adavoice_face/adavoice_face.ino
-		int xfadeDistance=16;
-		double [] samples = new double[xfadeDistance];
-		int xfadeIndex=0;
-		boolean stare=true;
-		@Override
-		public AudioStatus update(AudioStatus currentStatus, double amplitudeUnitVector, double currentRollingAverage,
-				double currentDerivitiveTerm, double percent) {
-			if(stare) {
-				stare=false;
-				for(int i=0;i<xfadeDistance;i++) {
-					samples[i]=currentRollingAverage;
-				}
-			}
-			double index=samples[xfadeIndex];
-			samples[xfadeIndex]=currentRollingAverage;
-			xfadeIndex++;
-			if(xfadeIndex==xfadeDistance) {
-				xfadeIndex=0;
-			}
-			double val = (currentRollingAverage+index)/2*currentDerivitiveTerm;
-			switch(currentStatus) {
-				case AudioStatus.B_KST_SOUNDS:
-					if(val>AudioPlayer.getThreshhold()) {
-						currentStatus=AudioStatus.D_AA_SOUNDS;
-					}
-					break;
-				case AudioStatus.G_F_V_SOUNDS:
-					if(val<AudioPlayer.getLowerThreshhold()) {
-						currentStatus=AudioStatus.X_NO_SOUND;
-					}
-					break;
-				case AudioStatus.X_NO_SOUND:
-					if(val>AudioPlayer.getThreshhold()) {
-						currentStatus=AudioStatus.B_KST_SOUNDS;
-					}
-					break;
-				case AudioStatus.D_AA_SOUNDS:
-					if(val<AudioPlayer.getLowerThreshhold()) {
-						currentStatus=AudioStatus.G_F_V_SOUNDS;
-					}
-					break;
-				default:
-					break;
-			}
-			return currentStatus;
-		}
 
-		@Override
-		public AudioInputStream startProcessing(AudioInputStream ais) {
-			stare=true;
-			return ais;
-		}
-	});
 try {
 	nu.pattern.OpenCV.loadLocally()
 }catch(Throwable t) {
@@ -271,7 +219,11 @@ public class GPTInterface {
 	Tab t=new Tab()
 
 	private String API_KEY;
-	private static final String CHATGPT_API_URL = "https://api.openai.com/v1/chat/completions";
+	private static final String CHATGPT_API_URL = "https://api.openai.com/v1/chat/completions"
+
+
+
+	static final String modelName = "vosk-model-en-us-daanzu-20200905";
 	Type TT_mapStringString = new TypeToken<HashMap<String, Object>>() {}.getType();
 	Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 	int maxSize = 240
@@ -287,9 +239,9 @@ public class GPTInterface {
 	// model downloaded from https://alphacephei.com/vosk/models
 	//Model model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-0.22/");
 	//Model model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-daanzu-20200905-lgraph/");
-	Model model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-daanzu-20200905/");
+	Model model=null// = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-daanzu-20200905/");
 
-	Recognizer recognizer = new Recognizer(model, 120000)
+	Recognizer recognizer=null// = new Recognizer(model, 120000)
 	VideoCapture capture = new VideoCapture(0);
 	// face cascade classifier
 	CascadeClassifier faceCascade = new CascadeClassifier();
@@ -313,6 +265,35 @@ public class GPTInterface {
 		mlmodel  = PredictorFactory.imageContentsFactory(ImagePredictorType.ultranet);
 		predictor = mlmodel.newPredictor();
 		getFaces()
+		String pathTOModel = ScriptingEngine.getWorkspace().getAbsolutePath()+"/"+modelName+".zip"
+		File zipfile = new File(pathTOModel)
+
+		if(!zipfile.exists()) {
+
+			String urlStr = "https://alphacephei.com/vosk/models/"+modelName+".zip"
+			URL url = new URL(urlStr);
+			BufferedInputStream bis = new BufferedInputStream(url.openStream());
+			FileOutputStream fis = new FileOutputStream(zipfile);
+			byte[] buffer = new byte[1024];
+			int count = 0;
+			System.out.println("Downloading Vosk Model "+modelName)
+			while ((count = bis.read(buffer, 0, 1024)) != -1) {
+				fis.write(buffer, 0, count);
+				System.out.print(".")
+			}
+			fis.close();
+			bis.close();
+
+			String source = zipfile.getAbsolutePath();
+			String destination = ScriptingEngine.getWorkspace().getAbsolutePath() ;
+			System.out.println("Unzipping Vosk Model "+modelName)
+			ZipFile zipFile = new ZipFile(source);
+			zipFile.extractAll(destination);
+
+		}
+		model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/"+modelName+"/");
+
+		recognizer = new Recognizer(model, 120000)
 	}
 
 	public String request(String phrase) throws IOException {
@@ -659,14 +640,14 @@ try {
 		RollingAverage lookAvg = new RollingAverage(5)
 		RollingAverage tiltAvg = new RollingAverage(10)
 		RollingAverage nod = new RollingAverage(5)
-		
+
 		while(running) {
-			
+
 			Thread.sleep(msLoop)
 			if(gpt.status != gpt.laststatus) {
 				gpt.laststatus=gpt.status;
-				boolean isMouthOpen = gpt.status.isOpen()
-				mouth.setTargetEngineeringUnits(isMouthOpen?-10.0:0);
+				double isMouthOpen = gpt.status.mouthOpenVector()
+				mouth.setTargetEngineeringUnits(isMouthOpen*-20.0);
 				mouth.flush(0);
 			}
 			double unitVextorOfNow=((double) indexAnimationLoop)/((double) numStepsPerLoop)
@@ -674,7 +655,7 @@ try {
 			double cosVal = Math.cos(unitVextorOfNow*Math.PI*2)
 			double tiltangle=0
 			double nodAngle =0
-			
+
 			Rect[] faces= gpt.getFaces()
 			if(mode ==AnimationMode.facetrack) {
 				if(open) {
@@ -700,8 +681,9 @@ try {
 				nodAngle=nod.get(-gpt.nodVector())
 			}else {
 				eye.setTargetEngineeringUnits(-42);
+				tiltTarget=0;
 			}
-			
+
 			TransformNR changed=new TransformNR()
 			changed.setX(156)
 
@@ -711,7 +693,7 @@ try {
 			def analogz = 35
 			changed.setZ(200+analogz*cosVal)
 			changed.setY(analogy)
-			def analogup = sinVal*headRnage 
+			def analogup = sinVal*headRnage
 			def rot = 179.96+analogup
 			//println "Tilt target "+tiltTarget
 			changed.setRotation(new RotationNR(0,rot,-55+(headRnage*nodAngle)))
@@ -767,7 +749,7 @@ try {
 	ISpeakingProgress sp ={double percent,AudioStatus status->
 		gpt.status=status;
 	}
-	double voice =864
+	double voice =805
 	// 805 mayb64
 	// 857 laid back scottish?
 	// 864 impatient scottish??
