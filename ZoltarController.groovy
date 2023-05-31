@@ -646,9 +646,7 @@ try {
 			Thread.sleep(msLoop)
 			if(gpt.status != gpt.laststatus) {
 				gpt.laststatus=gpt.status;
-				double isMouthOpen = gpt.status.mouthOpenVector()
-				mouth.setTargetEngineeringUnits(isMouthOpen*-20.0);
-				mouth.flush(0);
+
 			}
 			double unitVextorOfNow=((double) indexAnimationLoop)/((double) numStepsPerLoop)
 			double sinVal = Math.sin(unitVextorOfNow*Math.PI*2)
@@ -748,6 +746,9 @@ try {
 
 	ISpeakingProgress sp ={double percent,AudioStatus status->
 		gpt.status=status;
+		double isMouthOpen = status.mouthOpenVector()
+		mouth.setTargetEngineeringUnits(isMouthOpen*-10.0);
+		mouth.flush(0);
 	}
 	double voice =805
 	// 805 mayb64
