@@ -507,9 +507,9 @@ public class GPTInterface {
 			return;
 		try {
 			if(Math.random()>0.5)
-				phrase="Pretend you are a austraillian fortune teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
+				phrase="Pretend you are a  fortune teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
 			else
-				phrase="Pretend you are a austraillian Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. Respond to: "+phrase
+				phrase="Pretend you are a  Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. Respond to: "+phrase
 
 			String requestBody = String.format("{\"model\":\"%s\",\"messages\":\"%s\",\"temperature\":%f}", AI_MODEL_NAME, phrase, randomness);
 			HashMap<String,Object> message = new HashMap();
@@ -649,7 +649,7 @@ try {
 		RollingAverage lookAvg = new RollingAverage(5)
 		RollingAverage tiltAvg = new RollingAverage(10)
 		RollingAverage nod = new RollingAverage(5)
-		tiltAvg.setMax(30)
+		tiltAvg.setMax(20)
 		while(running) {
 
 			Thread.sleep(msLoop)
