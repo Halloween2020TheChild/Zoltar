@@ -625,24 +625,25 @@ enum AnimationMode{
 GPTInterface gpt
 public double mouthOpenVector(AudioStatus s) {
 	switch(s) {
-		case AudioStatus.B_KST_SOUNDS:
-			return 0.3;
-		case AudioStatus.C_EH_AE_SOUNDS:
-			return 0.6;
-		case AudioStatus.D_AA_SOUNDS:
-			return 1;
-		case AudioStatus.E_AO_ER_SOUNDS:
-			return 0.6;
-		case AudioStatus.F_UW_OW_W_SOUNDS:
-			return 0.2;
-		case AudioStatus.G_F_V_SOUNDS:
-			return 0.1;
-		case AudioStatus.H_L_SOUNDS:
-			return 0.9;
-		case AudioStatus.X_NO_SOUND:
-		case AudioStatus.A_PBM_SOUNDS:
-		default:
-			break;
+	case AudioStatus.B_KST_SOUNDS:
+		return 0.3;
+	case AudioStatus.C_EH_AE_SOUNDS:
+		return 0.6;
+	case AudioStatus.D_AA_SOUNDS:
+		return 1;
+	case AudioStatus.E_AO_ER_SOUNDS:
+		return 0.6;
+	case AudioStatus.F_UW_OW_W_SOUNDS:
+		return 0.2;
+	case AudioStatus.G_F_V_SOUNDS:
+		return 0.1;
+	case AudioStatus.H_L_SOUNDS:
+		return 0.9;
+	case AudioStatus.A_PBM_SOUNDS:
+		return 0.05
+	case AudioStatus.X_NO_SOUND:
+	default:
+		break;
 	}
 	return 0;
 }
@@ -805,7 +806,7 @@ try {
 	mode =AnimationMode.facetrack
 	//while(!Thread.interrupted()){
 	BowlerKernel.speak("What do you wish to ask the mighty Zol-tar?", 100, 0, voice, 1, 1.0,sp)
-	while(!Thread.interrupted()) {Thread.sleep(100)}
+	//while(!Thread.interrupted()) {Thread.sleep(100)}
 	String prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
 	Thread initialPrompt=new Thread({
