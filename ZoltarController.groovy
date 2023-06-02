@@ -504,13 +504,24 @@ public class GPTInterface {
 	 */
 
 	public String request(String phrase, float randomness,int retrys) throws IOException {
+
+		if(Math.random()>0.7)
+			phrase="Pretend you are a  fortune teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
+		else
+			phrase="Pretend you are a  Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. Respond to: "+phrase
+		return gptRaw( phrase,  randomness, retrys);
+	}
+
+	public String cleanup(String phrase, float randomness,int retrys) throws IOException {
+
+		phrase="Please change the following phrase into third person. Use they/them pronouns only. Respond with only the corrected phrase and nothing else. The phrase is: "+phrase
+		return gptRaw( phrase,  randomness, retrys);
+	}
+
+	public String gptRaw(String phrase, float randomness,int retrys) {
 		if(retrys==0)
 			return;
 		try {
-			if(Math.random()>0.5)
-				phrase="Pretend you are a  fortune teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
-			else
-				phrase="Pretend you are a  Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. Respond to: "+phrase
 
 			String requestBody = String.format("{\"model\":\"%s\",\"messages\":\"%s\",\"temperature\":%f}", AI_MODEL_NAME, phrase, randomness);
 			HashMap<String,Object> message = new HashMap();
@@ -554,6 +565,7 @@ public class GPTInterface {
 			return request(phrase, randomness, retrys-1)
 		}
 	}
+
 	public void close() {
 		capture.release();
 		BowlerStudioController.removeObject(t)
@@ -625,25 +637,25 @@ enum AnimationMode{
 GPTInterface gpt
 public double mouthOpenVector(AudioStatus s) {
 	switch(s) {
-	case AudioStatus.B_KST_SOUNDS:
-		return 0.3;
-	case AudioStatus.C_EH_AE_SOUNDS:
-		return 0.6;
-	case AudioStatus.D_AA_SOUNDS:
-		return 1;
-	case AudioStatus.E_AO_ER_SOUNDS:
-		return 0.6;
-	case AudioStatus.F_UW_OW_W_SOUNDS:
-		return 0.2;
-	case AudioStatus.G_F_V_SOUNDS:
-		return 0.1;
-	case AudioStatus.H_L_SOUNDS:
-		return 0.9;
-	case AudioStatus.A_PBM_SOUNDS:
-		return 0.05
-	case AudioStatus.X_NO_SOUND:
-	default:
-		break;
+		case AudioStatus.B_KST_SOUNDS:
+			return 0.3;
+		case AudioStatus.C_EH_AE_SOUNDS:
+			return 0.6;
+		case AudioStatus.D_AA_SOUNDS:
+			return 1;
+		case AudioStatus.E_AO_ER_SOUNDS:
+			return 0.6;
+		case AudioStatus.F_UW_OW_W_SOUNDS:
+			return 0.2;
+		case AudioStatus.G_F_V_SOUNDS:
+			return 0.1;
+		case AudioStatus.H_L_SOUNDS:
+			return 0.9;
+		case AudioStatus.A_PBM_SOUNDS:
+			return 0.05
+		case AudioStatus.X_NO_SOUND:
+		default:
+			break;
 	}
 	return 0;
 }
@@ -794,23 +806,25 @@ try {
 		mouth.setTargetEngineeringUnits(isMouthOpen*-10.0);
 		mouth.flush(0)
 		Thread.sleep(0,100)
-		
+
 		if(mode==AnimationMode.waitForSpeak)
 			mode=AnimationMode.facetrack
 	}
-	double voice =867
+	double voice =800
 	// 805 mayb64
 	// 857 laid back scottish?
 	// 864 impatient scottish??
 	double echo = 0.85
 	mode =AnimationMode.facetrack
-	//while(!Thread.interrupted()){
 	BowlerKernel.speak("What do you wish to ask the mighty Zol-tar?", 100, 0, voice, 1, 1.0,sp)
 	//while(!Thread.interrupted()) {Thread.sleep(100)}
 	String prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
 	Thread initialPrompt=new Thread({
-		BowlerKernel.speak("Spirit World! Answer Me! "+prompt, 400, 0, voice, echo, 1.0,sp)
+		BowlerKernel.speak("Spirit World! Answer Me! ", 400, 0, voice, echo, 1.0,sp)
+		prompt=gpt.cleanup(prompt, 0.9,5)
+		BowlerKernel.speak(prompt, 400, 0, voice, echo, 1.0,sp)
+		
 	})
 	initialPrompt.start()
 	response  = gpt.request(prompt,0.9,5)
@@ -818,7 +832,6 @@ try {
 	initialPrompt.join()
 	mode =AnimationMode.waitForSpeak
 	BowlerKernel.speak(response, 100, 0, voice, 1, 1.0,sp)
-	//}
 }catch(Throwable tr) {
 	BowlerStudio.printStackTrace(tr)
 }
