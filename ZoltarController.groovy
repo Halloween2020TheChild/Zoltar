@@ -512,12 +512,16 @@ public class GPTInterface {
 		return gptRaw( phrase,  randomness, retrys);
 	}
 
-	public String cleanup(String phrase, float randomness,int retrys) throws IOException {
+	public String cleanup(String phrase) throws IOException {
 
 		phrase="Please change the following phrase into third person. Use they/them pronouns only. Respond with only the corrected phrase and nothing else. The phrase is: "+phrase
-		return gptRaw( phrase,  randomness, retrys);
+		return gptRaw( phrase, 0.9, 5);
 	}
-
+	public String whatName(String phrase) throws IOException {
+		
+				phrase="Please parse the phrase and extract the name the person wished to be called. Respond with the name only. If the name can not be found, use the name 'Friend'. The phrase to parse for the name is: "+phrase
+				return gptRaw( phrase,   0.9, 5);
+			}
 	public String gptRaw(String phrase, float randomness,int retrys) {
 		if(retrys==0)
 			return;
@@ -810,19 +814,21 @@ try {
 		if(mode==AnimationMode.waitForSpeak)
 			mode=AnimationMode.facetrack
 	}
-	double voice =800
+	double voice =805
 	// 805 mayb64
 	// 857 laid back scottish?
 	// 864 impatient scottish??
 	double echo = 0.85
 	mode =AnimationMode.facetrack
-	BowlerKernel.speak("What do you wish to ask the mighty Zol-tar?", 100, 0, voice, 1, 1.0,sp)
+	BowlerKernel.speak("What shall i call you?", 100, 0, voice, 1, 1.0,sp)
+	String name = gpt.whatName(gpt.promptFromMicrophone())
+	BowlerKernel.speak("Ok "+name+" what do you wish to ask the mighty Zol-tar?", 100, 0, voice, 1, 1.0,sp)
 	//while(!Thread.interrupted()) {Thread.sleep(100)}
 	String prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
 	Thread initialPrompt=new Thread({
-		BowlerKernel.speak("Spirit World! Answer Me! ", 400, 0, voice, echo, 1.0,sp)
-		String p=gpt.cleanup(prompt, 0.9,5)
+		BowlerKernel.speak("Spirit World! Answer Me! "+name+" is asking you", 400, 0, voice, echo, 1.0,sp)
+		String p=gpt.cleanup(prompt)
 		BowlerKernel.speak(p, 400, 0, voice, echo, 1.0,sp)
 		
 	})
