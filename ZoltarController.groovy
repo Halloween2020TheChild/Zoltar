@@ -209,7 +209,7 @@ class RollingAverage {
 			index=0;
 		return rollingSum/((double)depth)
 	}
-	
+
 }
 try {
 	nu.pattern.OpenCV.loadLocally()
@@ -224,7 +224,7 @@ public class GPTInterface {
 	Alert a;
 	public final String AI_MODEL_NAME = "gpt-3.5-turbo";
 	Tab t=new Tab()
-
+	double percent=0;
 	private String API_KEY;
 	private static final String CHATGPT_API_URL = "https://api.openai.com/v1/chat/completions"
 
@@ -623,24 +623,24 @@ enum AnimationMode{
 GPTInterface gpt
 public double mouthOpenVector(AudioStatus s) {
 	switch(s) {
-	case AudioStatus.B_KST_SOUNDS:
-		return 0.3;
-	case AudioStatus.C_EH_AE_SOUNDS:
-		return 0.6;
-	case AudioStatus.D_AA_SOUNDS:
-		return 1;
-	case AudioStatus.E_AO_ER_SOUNDS:
-		return 0.6;
-	case AudioStatus.F_UW_OW_W_SOUNDS:
-		return 0.2;
-	case AudioStatus.G_F_V_SOUNDS:
-		return 0.1;
-	case AudioStatus.H_L_SOUNDS:
-		return 0.9;
-	case AudioStatus.X_NO_SOUND:
-	case AudioStatus.A_PBM_SOUNDS:
-	default:
-		break;
+		case AudioStatus.B_KST_SOUNDS:
+			return 0.3;
+		case AudioStatus.C_EH_AE_SOUNDS:
+			return 0.6;
+		case AudioStatus.D_AA_SOUNDS:
+			return 1;
+		case AudioStatus.E_AO_ER_SOUNDS:
+			return 0.6;
+		case AudioStatus.F_UW_OW_W_SOUNDS:
+			return 0.2;
+		case AudioStatus.G_F_V_SOUNDS:
+			return 0.1;
+		case AudioStatus.H_L_SOUNDS:
+			return 0.9;
+		case AudioStatus.X_NO_SOUND:
+		case AudioStatus.A_PBM_SOUNDS:
+		default:
+			break;
 	}
 	return 0;
 }
@@ -669,20 +669,18 @@ try {
 		long durationBetweenBlinks = (Math.random()*3000)+3000
 		RollingAverage lookAvg = new RollingAverage(5)
 		RollingAverage tiltAvg = new RollingAverage(10)
+		RollingAverage cosAvg = new RollingAverage(10)
 		RollingAverage nod = new RollingAverage(5)
 		tiltAvg.setMax(20)
 		while(running) {
 
 			Thread.sleep(msLoop)
-			if(gpt.status != gpt.laststatus) {
-				gpt.laststatus=gpt.status;
-
-			}
-			double unitVextorOfNow=((double) indexAnimationLoop)/((double) numStepsPerLoop)
-			double sinVal = Math.sin(unitVextorOfNow*Math.PI*2)
-			double cosVal = Math.cos(unitVextorOfNow*Math.PI*2)
-			double tiltangle=0
-			double nodAngle =0
+			//mouth.flush(0);
+			double unitVextorOfNow=0;//=((double) indexAnimationLoop)/((double) numStepsPerLoop)
+			double sinVal=0;// = lookAvg.get(Math.sin(unitVextorOfNow*Math.PI*2))
+			double cosVal=0;// = cosAvg.get(Math.cos(unitVextorOfNow*Math.PI*2))
+			double tiltangle=0;//=tiltAvg.get(0)
+			double nodAngle =0;//=nod.get(0)
 
 			Rect[] faces= gpt.getFaces()
 			if(mode ==AnimationMode.facetrack) {
@@ -705,9 +703,14 @@ try {
 				//println "Look "+look
 				tiltTarget = tiltAvg.get(-gpt.tiltAngle*0.9)
 				sinVal=-look*4-1.0;
-				cosVal=0
+				cosVal=cosAvg.get(0)
 				nodAngle=nod.get(-gpt.nodVector())
 			}else {
+				sinVal = lookAvg.get(Math.sin(unitVextorOfNow*Math.PI*2))
+				cosVal = cosAvg.get(Math.cos(unitVextorOfNow*Math.PI*2))
+				tiltangle=tiltAvg.get(0)
+				nodAngle =nod.get(0)
+
 				eye.setTargetEngineeringUnits(-42);
 				tiltTarget=0;
 			}
@@ -765,7 +768,11 @@ try {
 				//BowlerStudio.printStackTrace(t)
 			}
 			arm.setDesiredJointSpaceVector(vect, normalsecs);
+			//println vect
+			if(gpt.status!=gpt.laststatus) {
+				gpt.laststatus=gpt.status
 
+			}
 			indexAnimationLoop+=1;
 			if(indexAnimationLoop>=numStepsPerLoop) {
 				indexAnimationLoop=0;
@@ -776,9 +783,13 @@ try {
 
 	ISpeakingProgress sp ={double percent,AudioStatus status->
 		gpt.status=status;
-		double isMouthOpen = mouthOpenVector(status)
-		mouth.setTargetEngineeringUnits(isMouthOpen*-10.0);
-		mouth.flush(0);
+		gpt.percent=percent
+		//println gpt.percent+" " +gpt.status
+		double isMouthOpen = mouthOpenVector(gpt.status)
+		mouth.setTargetEngineeringUnits(isMouthOpen*-30.0);
+		mouth.flush(0)
+		Thread.sleep(0,100)
+		
 		if(mode==AnimationMode.waitForSpeak)
 			mode=AnimationMode.facetrack
 	}
@@ -789,7 +800,7 @@ try {
 	double echo = 0.85
 	mode =AnimationMode.facetrack
 	//while(!Thread.interrupted()){
-	BowlerKernel.speak("What do you wish to know?", 100, 0, voice, 1, 1.0,sp)
+	BowlerKernel.speak("What do you wish to ask the mighty Zoltar?", 100, 0, voice, 1, 1.0,sp)
 	//while(!Thread.interrupted()) {Thread.sleep(100)}
 	String prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
