@@ -163,6 +163,8 @@ DHParameterKinematics arm = base.getAllDHChains().get(0);
 MobileBase head = arm.getSlaveMobileBase(5)
 AbstractLink mouth =head.getAllDHChains().get(0).getAbstractLink(0)
 AbstractLink eye =head.getAllDHChains().get(1).getAbstractLink(0)
+eye.setTargetEngineeringUnits(-42.0);
+eye.flush(0)
 AudioPlayer.setIntegralDepth(20)
 AudioPlayer.setThreshhold(0.01)
 AudioPlayer.setLowerThreshhold(0.005)
@@ -779,6 +781,8 @@ try {
 			}
 		}
 		println "Zoltar animation thread exit clean"
+		eye.setTargetEngineeringUnits(-42.0);
+		eye.flush(0)
 	}).start()
 
 	ISpeakingProgress sp ={double percent,AudioStatus status->
@@ -793,15 +797,15 @@ try {
 		if(mode==AnimationMode.waitForSpeak)
 			mode=AnimationMode.facetrack
 	}
-	double voice =905
+	double voice =867
 	// 805 mayb64
 	// 857 laid back scottish?
 	// 864 impatient scottish??
 	double echo = 0.85
 	mode =AnimationMode.facetrack
 	//while(!Thread.interrupted()){
-	BowlerKernel.speak("What do you wish to ask the mighty Zoltar?", 100, 0, voice, 1, 1.0,sp)
-	//while(!Thread.interrupted()) {Thread.sleep(100)}
+	BowlerKernel.speak("What do you wish to ask the mighty Zol-tar?", 100, 0, voice, 1, 1.0,sp)
+	while(!Thread.interrupted()) {Thread.sleep(100)}
 	String prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
 	Thread initialPrompt=new Thread({
@@ -822,6 +826,8 @@ Thread.sleep(100)
 mouth.setTargetEngineeringUnits(0);
 eye.setTargetEngineeringUnits(-42.0);
 gpt.close()
+Thread.sleep(100)
+
 //Platform.runLater( {gpt.a.close();})
 
 
