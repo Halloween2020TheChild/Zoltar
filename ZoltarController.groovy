@@ -168,6 +168,7 @@ AudioPlayer.setThreshhold(0.01)
 AudioPlayer.setLowerThreshhold(0.005)
 AudioPlayer.setIntegralGain(1);
 AudioPlayer.setDerivitiveGain(1);
+ScriptingEngine.gitScriptRun("https://github.com/madhephaestus/TextToSpeechASDRTest.git", "VoskLipSync.groovy")
 double globalAmp=0;
 double globalCurrentRoll=0;
 double globalCurrentDeriv=0;
@@ -210,8 +211,6 @@ class RollingAverage {
 	}
 	
 }
-AudioPlayer.setLambda(new RhubarbManager());
-
 try {
 	nu.pattern.OpenCV.loadLocally()
 }catch(Throwable t) {
@@ -622,7 +621,29 @@ enum AnimationMode{
 	waitForSpeak
 }
 GPTInterface gpt
-
+public double mouthOpenVector(AudioStatus s) {
+	switch(s) {
+	case AudioStatus.B_KST_SOUNDS:
+		return 0.3;
+	case AudioStatus.C_EH_AE_SOUNDS:
+		return 0.6;
+	case AudioStatus.D_AA_SOUNDS:
+		return 1;
+	case AudioStatus.E_AO_ER_SOUNDS:
+		return 0.6;
+	case AudioStatus.F_UW_OW_W_SOUNDS:
+		return 0.2;
+	case AudioStatus.G_F_V_SOUNDS:
+		return 0.1;
+	case AudioStatus.H_L_SOUNDS:
+		return 0.9;
+	case AudioStatus.X_NO_SOUND:
+	case AudioStatus.A_PBM_SOUNDS:
+	default:
+		break;
+	}
+	return 0;
+}
 try {
 	println "Loading API key from "+keyLocation
 	String content = new String(Files.readAllBytes(Paths.get(keyLocation)));
@@ -730,7 +751,7 @@ try {
 					println "changed"+changed
 					println "starttr"+starttr
 					println "delta"+delta
-					println "scaled"+scaledtrig
+					//println "scaled"+scaledtrig
 					println "newTR"+newTR
 					println "ERROR, cant get to "+newTR
 					//continue;
@@ -755,13 +776,13 @@ try {
 
 	ISpeakingProgress sp ={double percent,AudioStatus status->
 		gpt.status=status;
-		double isMouthOpen = status.mouthOpenVector()
+		double isMouthOpen = mouthOpenVector(status)
 		mouth.setTargetEngineeringUnits(isMouthOpen*-10.0);
 		mouth.flush(0);
 		if(mode==AnimationMode.waitForSpeak)
 			mode=AnimationMode.facetrack
 	}
-	double voice =805
+	double voice =905
 	// 805 mayb64
 	// 857 laid back scottish?
 	// 864 impatient scottish??
