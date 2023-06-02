@@ -822,8 +822,8 @@ try {
 	mode =AnimationMode.spiritWorld
 	Thread initialPrompt=new Thread({
 		BowlerKernel.speak("Spirit World! Answer Me! ", 400, 0, voice, echo, 1.0,sp)
-		prompt=gpt.cleanup(prompt, 0.9,5)
-		BowlerKernel.speak(prompt, 400, 0, voice, echo, 1.0,sp)
+		String p=gpt.cleanup(prompt, 0.9,5)
+		BowlerKernel.speak(p, 400, 0, voice, echo, 1.0,sp)
 		
 	})
 	initialPrompt.start()
