@@ -786,7 +786,7 @@ try {
 		gpt.percent=percent
 		//println gpt.percent+" " +gpt.status
 		double isMouthOpen = mouthOpenVector(gpt.status)
-		mouth.setTargetEngineeringUnits(isMouthOpen*-30.0);
+		mouth.setTargetEngineeringUnits(isMouthOpen*-10.0);
 		mouth.flush(0)
 		Thread.sleep(0,100)
 		
