@@ -1,5 +1,5 @@
-@Grab(group='com.alphacephei', module='vosk', version='0.3.45')
-@Grab(group='org.openpnp', module='opencv', version='4.7.0-0')
+//@Grab(group='com.alphacephei', module='vosk', version='0.3.45')
+//@Grab(group='org.openpnp', module='opencv', version='4.7.0-0')
 
 import java.io.FileInputStream;
 import java.io.BufferedInputStream;
@@ -132,6 +132,7 @@ import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
 import org.opencv.videoio.VideoCapture;
 import com.neuronrobotics.bowlerstudio.lipsync.RhubarbManager;
+import com.neuronrobotics.bowlerstudio.lipsync.VoskLipSync
 
 
 boolean regen=false;
@@ -170,7 +171,7 @@ AudioPlayer.setThreshhold(0.01)
 AudioPlayer.setLowerThreshhold(0.005)
 AudioPlayer.setIntegralGain(1);
 AudioPlayer.setDerivitiveGain(1);
-ScriptingEngine.gitScriptRun("https://github.com/madhephaestus/TextToSpeechASDRTest.git", "VoskLipSync.groovy")
+AudioPlayer.setLambda (com.neuronrobotics.bowlerstudio.lipsync.VoskLipSync.get());
 double globalAmp=0;
 double globalCurrentRoll=0;
 double globalCurrentDeriv=0;
@@ -248,10 +249,10 @@ public class GPTInterface {
 	// model downloaded from https://alphacephei.com/vosk/models
 	//Model model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-0.22/");
 	//Model model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-daanzu-20200905-lgraph/");
-	Model model=null// = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-daanzu-20200905/");
+	//Model model=null// = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-daanzu-20200905/");
 
-	Recognizer recognizer=null// = new Recognizer(model, 120000)
-	VideoCapture capture = new VideoCapture(0);
+	//Recognizer recognizer=null// = new Recognizer(model, 120000)
+	VideoCapture capture ;
 	// face cascade classifier
 	CascadeClassifier faceCascade = new CascadeClassifier();
 	File fileFromGit = ScriptingEngine.fileFromGit("https://github.com/CommonWealthRobotics/harr-cascade-archive.git",
@@ -269,40 +270,16 @@ public class GPTInterface {
 		this.API_KEY = APIKey;
 		LibVosk.setLogLevel(LogLevel.DEBUG);
 		faceCascade.load(fileFromGit.getAbsolutePath());
-		capture.open(0)
+		capture= OpenCVManager.get(0).getCapture()
+
 		factory=ImageFactory.getInstance()
 		mlmodel  = PredictorFactory.imageContentsFactory(ImagePredictorType.ultranet);
 		predictor = mlmodel.newPredictor();
 		getFaces()
-		String pathTOModel = ScriptingEngine.getWorkspace().getAbsolutePath()+"/"+modelName+".zip"
-		File zipfile = new File(pathTOModel)
 
-		if(!zipfile.exists()) {
+		//model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/"+modelName+"/");
 
-			String urlStr = "https://alphacephei.com/vosk/models/"+modelName+".zip"
-			URL url = new URL(urlStr);
-			BufferedInputStream bis = new BufferedInputStream(url.openStream());
-			FileOutputStream fis = new FileOutputStream(zipfile);
-			byte[] buffer = new byte[1024];
-			int count = 0;
-			System.out.println("Downloading Vosk Model "+modelName)
-			while ((count = bis.read(buffer, 0, 1024)) != -1) {
-				fis.write(buffer, 0, count);
-				System.out.print(".")
-			}
-			fis.close();
-			bis.close();
-
-			String source = zipfile.getAbsolutePath();
-			String destination = ScriptingEngine.getWorkspace().getAbsolutePath() ;
-			System.out.println("Unzipping Vosk Model "+modelName)
-			ZipFile zipFile = new ZipFile(source);
-			zipFile.extractAll(destination);
-
-		}
-		model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/"+modelName+"/");
-
-		recognizer = new Recognizer(model, 120000)
+		//recognizer = new Recognizer(model, 120000)
 	}
 
 	public String request(String phrase) throws IOException {
@@ -310,54 +287,7 @@ public class GPTInterface {
 	}
 
 	public String promptFromMicrophone() {
-		microphone = (TargetDataLine) AudioSystem.getLine(info);
-		microphone.open(format);
-		microphone.start();
-
-		//ByteArrayOutputStream out = new ByteArrayOutputStream();
-		int numBytesRead;
-		int CHUNK_SIZE = 1024;
-		int bytesRead = 0;
-
-		//DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, format);
-		//speakers = (SourceDataLine) AudioSystem.getLine(dataLineInfo);
-		//speakers.open(format);
-		//speakers.start();
-		byte[] b = new byte[4096];
-		println "Listening..."
-		String result=null;
-		long start = System.currentTimeMillis()
-		Type STTType = new TypeToken<HashMap<String, String>>() {}.getType();
-		try{
-			while (((System.currentTimeMillis()-start)<30000) && !Thread.interrupted()) {
-				Thread.sleep(1);
-				numBytesRead = microphone.read(b, 0, CHUNK_SIZE);
-				bytesRead += numBytesRead;
-
-				//out.write(b, 0, numBytesRead);
-
-				//speakers.write(b, 0, numBytesRead);
-
-				if (recognizer.acceptWaveForm(b, numBytesRead)) {
-					result=recognizer.getResult()
-					HashMap<String, String> db = gson.fromJson(result, STTType);
-					result = db.get("text")
-					if(result.length()>2)
-						break;
-					else {
-						println "Listening..."
-					}
-				} else {
-					//System.out.println(recognizer.getPartialResult());
-				}
-			}
-		}catch(Throwable t){
-			t.printStackTrace()
-		}
-		System.out.println(result);
-		//speakers.drain();
-		//speakers.close();
-		microphone.close();
+		String result = VoskLipSync.promptFromMicrophone();
 
 		if(result==null)
 			result="What is my fortune?"
@@ -518,10 +448,10 @@ public class GPTInterface {
 		return gptRaw( phrase, 0.9, 5);
 	}
 	public String whatName(String phrase) throws IOException {
-		
-				phrase="Please parse the phrase and extract the name the person wished to be called. Respond with the name only. If the name can not be found, use the name 'Friend'. The phrase to parse for the name is: "+phrase
-				return gptRaw( phrase,   0.9, 5);
-			}
+
+		phrase="Please extract the name the person wished to be called. Respond with the name only. If the name can not be found respond with only the single word 'Friend'. Do not use punctuation in the response. The phrase is: "+phrase
+		return gptRaw( phrase,   0.9, 5);
+	}
 	public String gptRaw(String phrase, float randomness,int retrys) {
 		if(retrys==0)
 			return;
@@ -571,7 +501,7 @@ public class GPTInterface {
 	}
 
 	public void close() {
-		capture.release();
+		//capture.release();
 		BowlerStudioController.removeObject(t)
 		println "Clean Exit from robot controller"
 	}
@@ -731,7 +661,6 @@ try {
 				nodAngle =nod.get(0)
 
 				eye.setTargetEngineeringUnits(-42);
-				tiltTarget=0;
 			}
 
 			TransformNR changed=new TransformNR()
@@ -810,7 +739,6 @@ try {
 		mouth.setTargetEngineeringUnits(isMouthOpen*-10.0);
 		mouth.flush(0)
 		Thread.sleep(0,100)
-
 		if(mode==AnimationMode.waitForSpeak)
 			mode=AnimationMode.facetrack
 	}
@@ -821,8 +749,16 @@ try {
 	double echo = 0.85
 	mode =AnimationMode.facetrack
 	BowlerKernel.speak("What shall i call you?", 100, 0, voice, 1, 1.0,sp)
-	String name = gpt.whatName(gpt.promptFromMicrophone())
-	BowlerKernel.speak("Ok "+name+" what do you wish to ask the mighty Zol-tar?", 100, 0, voice, 1, 1.0,sp)
+	String nameTMp=gpt.promptFromMicrophone()
+	String name=null
+
+	parserOfName = new Thread({name = gpt.whatName(nameTMp)})
+	parserOfName.start()
+	BowlerKernel.speak("What do you wish to ask the mighty Zol-tar", 100, 0, voice, 1, 1.0,sp)
+	Thread.sleep(500)
+	if(name!=null)
+		BowlerKernel.speak(name+"?", 100, 0, voice, 1, 1.0,sp)
+
 	//while(!Thread.interrupted()) {Thread.sleep(100)}
 	String prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
@@ -830,7 +766,7 @@ try {
 		BowlerKernel.speak("Spirit World! Answer Me! "+name+" is asking you", 400, 0, voice, echo, 1.0,sp)
 		String p=gpt.cleanup(prompt)
 		BowlerKernel.speak(p, 400, 0, voice, echo, 1.0,sp)
-		
+
 	})
 	initialPrompt.start()
 	response  = gpt.request(prompt,0.9,5)
