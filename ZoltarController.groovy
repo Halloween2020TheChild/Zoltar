@@ -1,6 +1,3 @@
-//@Grab(group='com.alphacephei', module='vosk', version='0.3.45')
-//@Grab(group='org.openpnp', module='opencv', version='4.7.0-0')
-
 import java.io.FileInputStream;
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -62,6 +59,7 @@ import ai.djl.modality.cv.output.DetectedObjects
 import ai.djl.modality.cv.output.DetectedObjects.DetectedObject
 import ai.djl.pytorch.jni.JniUtils
 import ai.djl.repository.zoo.ZooModel
+import groovy.ui.SystemOutputInterceptor
 import javafx.application.Platform
 import javafx.scene.control.Alert
 import javafx.scene.control.Alert.AlertType
@@ -100,6 +98,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Tab
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
+import javafx.scene.layout.HBox
+import javafx.scene.layout.VBox
 
 import org.opencv.videoio.VideoCapture;
 
@@ -107,7 +107,8 @@ import org.opencv.core.Size;
 import org.opencv.objdetect.Objdetect;
 import com.neuronrobotics.bowlerkernel.djl.ImagePredictorType;
 import com.neuronrobotics.bowlerkernel.djl.PredictorFactory;
-
+import com.neuronrobotics.bowlerkernel.djl.UniquePerson
+import com.neuronrobotics.bowlerkernel.djl.UniquePersonFactory
 import com.neuronrobotics.bowlerstudio.lipsync.RhubarbManager;
 import com.neuronrobotics.bowlerstudio.lipsync.VoskLipSync
 import com.neuronrobotics.bowlerstudio.opencv.OpenCVManager
@@ -228,13 +229,20 @@ public class GPTInterface {
 	Predictor<BufferedImage, DetectedObjects> predictor;
 	ImageFactory factory;
 	int frames=0;
-	ai.djl.modality.cv.output.Point noseCenterOfFace = null
+	org.opencv.core.Point noseCenterOfFace = null
+	VBox workingMemory=new VBox()
+	UniquePersonFactory   upf;
+	UniquePerson personToPayAttentionTo;
+	long timePersonLastSeen=0;
+	long attentionTImeout=10000;
 	public GPTInterface(String APIKey) {
 		this.API_KEY = APIKey;
 		capture= OpenCVManager.get(0).getCapture()
 		matrix =new Mat();
 		factory=ImageFactory.getInstance()
 		predictor  = PredictorFactory.imageContentsFactory(ImagePredictorType.ultranet);
+		upf= UniquePersonFactory.get();
+		upf.setWorkingMemory(workingMemory);
 		getFaces()
 
 	}
@@ -252,14 +260,14 @@ public class GPTInterface {
 	}
 	public double lookVector() {
 		try {
-			return noseCenterOfFace.getX()/((double)width)/2.0-0.5
+			return noseCenterOfFace.x/((double)width)/2.0-0.5
 		}catch(Exception ex) {
 			return 0;
 		}
 	}
 	public double nodVector() {
 		try {
-			return noseCenterOfFace.getY()/((double)height)/2.0-0.5
+			return noseCenterOfFace.y/((double)height)/2.0-0.5
 		}catch(Exception ex) {
 			return 0;
 		}
@@ -342,13 +350,14 @@ public class GPTInterface {
 							// angle is 0, they are the same
 							tiltAngle = 0
 						}
-						noseCenterOfFace = list.get(2)
+						//noseCenterOfFace = list.get(2)
 					}
 					//lm.get
-					facesArray[detectionIndex]=new Rect(topLeft.getX()*matrix.width(),topLeft.getY()*matrix.height(),rect.getWidth()*matrix.width() ,rect.getHeight()*matrix.height())
+					Rect crop=new Rect(topLeft.getX()*matrix.width(),topLeft.getY()*matrix.height(),rect.getWidth()*matrix.width() ,rect.getHeight()*matrix.height())
 					//System.out.println(c);
+					facesArray[detectionIndex]=crop;
 					//System.out.println("Name: "+c.getClassName() +" probability "+c.getProbability()+" center x "+topLeft.getX()+" center y "+topLeft.getY()+" rect h"+rect.getHeight()+" rect w"+rect.getWidth() );
-					Imgproc.rectangle(matrix, facesArray[detectionIndex].tl(), facesArray[detectionIndex].br(), new Scalar(0, 255, 0), 3);
+					Imgproc.rectangle(matrix, crop.tl(), crop.br(), new Scalar(0, 255, 0), 3);
 					Imgproc.putText(matrix, c.getClassName(), new Point(topLeft.getX()*matrix.width(),topLeft.getY()*matrix.height()-5), 3,1,  new Scalar(0, 255, 0));
 					if(list.size()>3) {
 						for(int j=0;j<2;j++) {
@@ -362,16 +371,45 @@ public class GPTInterface {
 							Imgproc.circle(matrix, new Point(p.getX(),p.getY()), 3, new Scalar(255, 0, 255))
 						}
 					}
+					upf.addFace(matrix,crop,list.get(2));
+					
 				}
-
+				if( facesArray.length>0) {
+					upf.setProcessFlag()
+					Thread.sleep(1);
+				}
+				HashMap<UniquePerson,org.opencv.core.Point> lhm =  upf.getCurrentPersons()
+				if(lhm!=null) {
+					if((System.currentTimeMillis()-timePersonLastSeen)>attentionTImeout) {
+						personToPayAttentionTo=null;
+					}
+					for(UniquePerson currentPerson:lhm.keySet()) {
+						def p = lhm.get(currentPerson)
+						if(personToPayAttentionTo==null) {
+							personToPayAttentionTo=currentPerson;
+							println "Found "+currentPerson.name
+						}
+						if(currentPerson.UUID==personToPayAttentionTo.UUID) {
+							noseCenterOfFace=p;
+							timePersonLastSeen = System.currentTimeMillis();
+							Imgproc.putText(matrix, currentPerson.name,p , 3,1,  new Scalar(0, 255, 0));
+							//
+						}
+					}
+					lhm.clear()
+					lhm=null
+				}
 				matrix.get(0, 0, data);
 				//println detection
 
 				// Creating the Writable Image
 				if(img==null) {
 					img = SwingFXUtils.toFXImage(image, null);
-					t=new Tab("Image capture");
-					t.setContent(new ImageView(img))
+					t=new Tab("Imace capture ");
+					HBox content = new HBox()
+					content.getChildren().add(new ImageView(img))
+					content.getChildren().add(workingMemory)
+					t.setContent(content);
 					BowlerStudioController.addObject(t, null);
 				}else{
 					SwingFXUtils.toFXImage(image, img);
@@ -699,25 +737,36 @@ try {
 		if(mode==AnimationMode.waitForSpeak)
 			mode=AnimationMode.facetrack
 	}
-	double voice =805
+	double voice =905
 	// 805 mayb64
 	// 857 laid back scottish?
 	// 864 impatient scottish??
 	double echo = 0.85
 	mode =AnimationMode.facetrack
-	BowlerKernel.speak("What shall i call you?", 100, 0, voice, 1, 1.0,sp)
-	String nameTMp=gpt.promptFromMicrophone()
-	String name=null
+	while(gpt.personToPayAttentionTo==null) {
+		Thread.sleep(100)
+	}
+	String name="Friend"
+	boolean repeat=true;
+	if(gpt.personToPayAttentionTo.name.startsWith("Person")) {
+		BowlerKernel.speak("What shall i call you?", 100, 0, voice, 1, 1.0,sp)
+		String nameTMp=gpt.promptFromMicrophone()
+		name = gpt.whatName(nameTMp)
+		gpt.personToPayAttentionTo.name=name;
+		gpt.upf.save();
+		repeat=false;
+	}else {
+		name  = gpt.personToPayAttentionTo.name;
+	}
+	String prompt;
+	if(repeat)
+		prompt = "Welcome back "+name+", what do you wish to ask Zol-Tar this time?"
+	else
+		prompt = "What do you wish to ask the mighty Zol-tar, "+name+"?"
+	BowlerKernel.speak(prompt, 100, 0, voice, 1, 1.0,sp)
 
-	parserOfName = new Thread({name = gpt.whatName(nameTMp)})
-	parserOfName.start()
-	BowlerKernel.speak("What do you wish to ask the mighty Zol-tar", 100, 0, voice, 1, 1.0,sp)
-	Thread.sleep(500)
-	if(name!=null)
-		BowlerKernel.speak(name+"?", 100, 0, voice, 1, 1.0,sp)
-
-	//while(!Thread.interrupted()) {Thread.sleep(100)}
-	String prompt = gpt.promptFromMicrophone();
+	while(!Thread.interrupted()) {Thread.sleep(100)}
+	prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
 	Thread initialPrompt=new Thread({
 		BowlerKernel.speak("Spirit World! Answer Me! "+name+" is asking you", 400, 0, voice, echo, 1.0,sp)
