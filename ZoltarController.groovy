@@ -17,8 +17,6 @@ import org.vosk.Recognizer;
 
 import com.neuronrobotics.bowlerstudio.scripting.ScriptingEngine
 
-import org.vosk.LibVosk;
-import org.vosk.Model;
 
 import java.applet.AudioClip
 import java.net.URI;
@@ -105,34 +103,14 @@ import javafx.scene.image.WritableImage;
 
 import org.opencv.videoio.VideoCapture;
 
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfRect;
-import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
 import org.opencv.core.Size;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
-import org.opencv.videoio.VideoCapture;
-
-
-
 import com.neuronrobotics.bowlerkernel.djl.ImagePredictorType;
 import com.neuronrobotics.bowlerkernel.djl.PredictorFactory;
 
-import org.opencv.videoio.VideoCapture;
-
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfRect;
-import org.opencv.core.Rect;
-import org.opencv.core.Scalar;
-import org.opencv.core.Size;
-import org.opencv.imgproc.Imgproc;
-import org.opencv.objdetect.CascadeClassifier;
-import org.opencv.objdetect.Objdetect;
-import org.opencv.videoio.VideoCapture;
 import com.neuronrobotics.bowlerstudio.lipsync.RhubarbManager;
 import com.neuronrobotics.bowlerstudio.lipsync.VoskLipSync
+import com.neuronrobotics.bowlerstudio.opencv.OpenCVManager
 
 
 boolean regen=false;
@@ -214,12 +192,6 @@ class RollingAverage {
 	}
 
 }
-try {
-	nu.pattern.OpenCV.loadLocally()
-}catch(Throwable t) {
-	BowlerStudio.printStackTrace(t)
-	return
-}
 public class GPTInterface {
 	private int width
 	private int height
@@ -246,40 +218,25 @@ public class GPTInterface {
 	DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
 	TargetDataLine microphone;
 	SourceDataLine speakers;
-	// model downloaded from https://alphacephei.com/vosk/models
-	//Model model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-0.22/");
-	//Model model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-daanzu-20200905-lgraph/");
-	//Model model=null// = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/vosk-model-en-us-daanzu-20200905/");
 
-	//Recognizer recognizer=null// = new Recognizer(model, 120000)
 	VideoCapture capture ;
-	// face cascade classifier
-	CascadeClassifier faceCascade = new CascadeClassifier();
-	File fileFromGit = ScriptingEngine.fileFromGit("https://github.com/CommonWealthRobotics/harr-cascade-archive.git",
-	"resources/haarcascades/haarcascade_frontalface_default.xml")
+
 	int absoluteFaceSize=0;
-	Mat matrix =new Mat();
+	Mat matrix;
 	WritableImage img = null;
 
-	ZooModel<Image, DetectedObjects> mlmodel;
 	Predictor<BufferedImage, DetectedObjects> predictor;
 	ImageFactory factory;
 	int frames=0;
 	ai.djl.modality.cv.output.Point noseCenterOfFace = null
 	public GPTInterface(String APIKey) {
 		this.API_KEY = APIKey;
-		LibVosk.setLogLevel(LogLevel.DEBUG);
-		faceCascade.load(fileFromGit.getAbsolutePath());
 		capture= OpenCVManager.get(0).getCapture()
-
+		matrix =new Mat();
 		factory=ImageFactory.getInstance()
-		mlmodel  = PredictorFactory.imageContentsFactory(ImagePredictorType.ultranet);
-		predictor = mlmodel.newPredictor();
+		predictor  = PredictorFactory.imageContentsFactory(ImagePredictorType.ultranet);
 		getFaces()
 
-		//model = new Model(ScriptingEngine.getWorkspace().getAbsolutePath()+"/"+modelName+"/");
-
-		//recognizer = new Recognizer(model, 120000)
 	}
 
 	public String request(String phrase) throws IOException {
