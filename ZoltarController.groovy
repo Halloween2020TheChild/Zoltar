@@ -259,6 +259,8 @@ public class GPTInterface {
 		return result;
 	}
 	public double lookVector() {
+		if(noseCenterOfFace==null)
+			return 0.0
 		try {
 			return noseCenterOfFace.x/((double)width)/2.0-0.5
 		}catch(Exception ex) {
@@ -266,6 +268,8 @@ public class GPTInterface {
 		}
 	}
 	public double nodVector() {
+		if(noseCenterOfFace==null)
+			return 0.0
 		try {
 			return noseCenterOfFace.y/((double)height)/2.0-0.5
 		}catch(Exception ex) {
