@@ -243,8 +243,12 @@ public class GPTInterface {
 		predictor  = PredictorFactory.imageContentsFactory(ImagePredictorType.ultranet);
 		upf= UniquePersonFactory.get();
 		upf.setWorkingMemory(workingMemory);
-		getFaces()
-
+		if( capture.isOpened()) {
+			println "Camera Open"
+			if (capture.read(matrix)) {
+				getFaces()
+			}
+		}
 	}
 
 	public String request(String phrase) throws IOException {
@@ -376,7 +380,7 @@ public class GPTInterface {
 						}
 					}
 					upf.addFace(matrix,crop,list.get(2));
-					
+
 				}
 				if( facesArray.length>0) {
 					upf.setProcessFlag()
@@ -769,8 +773,10 @@ try {
 		prompt = "What do you wish to ask the mighty Zol-tar, "+name+"?"
 	BowlerKernel.speak(prompt, 100, 0, voice, 1, 1.0,sp)
 
-	while(!Thread.interrupted()) {Thread.sleep(100)}
-	prompt = gpt.promptFromMicrophone();
+	while(!Thread.interrupted() && gpt.capture.isOpened()) {Thread.sleep(100)}
+
+	if(gpt.capture.isOpened())
+		prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
 	Thread initialPrompt=new Thread({
 		BowlerKernel.speak("Spirit World! Answer Me! "+name+" is asking you", 400, 0, voice, echo, 1.0,sp)
@@ -778,12 +784,12 @@ try {
 		BowlerKernel.speak(p, 400, 0, voice, echo, 1.0,sp)
 
 	})
-	initialPrompt.start()
+	if(gpt.capture.isOpened())initialPrompt.start()
 	response  = gpt.request(prompt,0.9,5)
-	println "\n\nResponse\n"+response
-	initialPrompt.join()
-	mode =AnimationMode.waitForSpeak
-	BowlerKernel.speak(response, 100, 0, voice, 1, 1.0,sp)
+	if(gpt.capture.isOpened())println "\n\nResponse\n"+response
+	if(gpt.capture.isOpened())initialPrompt.join()
+	if(gpt.capture.isOpened())mode =AnimationMode.waitForSpeak
+	if(gpt.capture.isOpened())BowlerKernel.speak(response, 100, 0, voice, 1, 1.0,sp)
 }catch(Throwable tr) {
 	BowlerStudio.printStackTrace(tr)
 }
