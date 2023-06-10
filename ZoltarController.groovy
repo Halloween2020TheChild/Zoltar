@@ -243,12 +243,13 @@ public class GPTInterface {
 		predictor  = PredictorFactory.imageContentsFactory(ImagePredictorType.ultranet);
 		upf= UniquePersonFactory.get();
 		upf.setWorkingMemory(workingMemory);
+		for(int i=0;i<5;i++)
 		if( capture.isOpened()) {
-			println "Camera Open"
 			if (capture.read(matrix)) {
-				getFaces()
+				println "Camera flush "+i
 			}
 		}
+		getFaces()
 	}
 
 	public String request(String phrase) throws IOException {
