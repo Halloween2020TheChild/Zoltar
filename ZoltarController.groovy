@@ -143,12 +143,8 @@ AbstractLink mouth =head.getAllDHChains().get(0).getAbstractLink(0)
 AbstractLink eye =head.getAllDHChains().get(1).getAbstractLink(0)
 eye.setTargetEngineeringUnits(-42.0);
 eye.flush(0)
-AudioPlayer.setIntegralDepth(20)
-AudioPlayer.setThreshhold(0.01)
-AudioPlayer.setLowerThreshhold(0.005)
-AudioPlayer.setIntegralGain(1);
-AudioPlayer.setDerivitiveGain(1);
-AudioPlayer.setLambda (com.neuronrobotics.bowlerstudio.lipsync.VoskLipSync.get());
+
+AudioPlayer.setLambda(com.neuronrobotics.bowlerstudio.lipsync.VoskLipSync.get());
 double globalAmp=0;
 double globalCurrentRoll=0;
 double globalCurrentDeriv=0;
