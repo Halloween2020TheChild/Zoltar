@@ -192,7 +192,7 @@ public class GPTInterface {
 	private int height
 	private double tiltAngle
 	Alert a;
-	public final String AI_MODEL_NAME = "gpt-3.5-turbo";
+	public final String AI_MODEL_NAME = "gpt-3.5-turbo-0613";
 	Tab t=new Tab()
 	double percent=0;
 	private String API_KEY;
