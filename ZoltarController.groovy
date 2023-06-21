@@ -113,12 +113,12 @@ import com.neuronrobotics.bowlerstudio.opencv.OpenCVManager
 
 
 boolean regen=false;
-MobileBase base=DeviceManager.getSpecificDevice( "Standard6dof",{
+MobileBase base=DeviceManager.getSpecificDevice( "zoltar",{
 	//If the device does not exist, prompt for the connection
 
 	MobileBase m = MobileBaseLoader.fromGit(
-			"https://github.com/Halloween2020TheChild/GroguMechanicsCad.git",
-			"hephaestus.xml"
+			"https://github.com/Halloween2020TheChild/Zoltar.git",
+			"zoltar.xml"
 			)
 	if(m==null)
 		throw new RuntimeException("Arm failed to assemble itself")
