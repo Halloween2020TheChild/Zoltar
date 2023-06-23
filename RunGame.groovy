@@ -1,7 +1,3 @@
-@GrabResolver(name='nr', root='https://oss.sonatype.org/service/local/repositories/releases/content/')
-@GrabResolver(name='mvnRepository', root='https://repo1.maven.org/maven2/')
-@Grab(group='com.neuronrobotics', module='SimplePacketComsJava', version='1.0.0')
-
 import com.neuronrobotics.bowlerstudio.creature.MobileBaseLoader
 import com.neuronrobotics.sdk.addons.kinematics.MobileBase
 import com.neuronrobotics.sdk.common.DeviceManager
