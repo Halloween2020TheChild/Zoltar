@@ -32,7 +32,11 @@ class Manager{
 	Manager(def device){
 		myDevice=(UDPSimplePacketComs)device
 		gpio.pollingMode()
+		try{
 		myDevice.addPollingPacket(gpio)
+		}catch(Throwable t){
+			t.printStackTrace()
+		}
 	}
 
 	def setGPIO(boolean value) {
