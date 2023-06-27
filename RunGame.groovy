@@ -27,25 +27,23 @@ MobileBase base=DeviceManager.getSpecificDevice( "zoltar",{
 
 class Manager{
 	UDPSimplePacketComs myDevice
-	BytePacketType gpio = new BytePacketType(1811, 64)
-
+	int IDOcCommand = 1811
 	Manager(def device){
 		myDevice=(UDPSimplePacketComs)device
-		gpio.pollingMode()
-		try{
-		myDevice.addPollingPacket(gpio)
-		}catch(Throwable t){
-			t.printStackTrace()
-		}
+		setGPIO(false,true)
+		PacketType p = myDevice.getPacket(IDOcCommand)
+		p.pollingMode()
 	}
 
-	def setGPIO(boolean value) {
-		def down = new byte[3]
+	def setGPIO(boolean value, boolean val2) {
+		def down = new byte[4]
 		down[2]=value?1:0
-		myDevice.writeBytes(gpio.idOfCommand, down)
+		down[3]=val2?1:0
+		myDevice.writeBytes(IDOcCommand, down)
 	}
 	def getGPIO(int index) {
-		return (gpio.getUpstream()[index].byteValue()>0)
+		PacketType p = myDevice.getPacket(IDOcCommand)
+		return (p.getUpstream()[index].byteValue()>0)
 	}
 }
 
@@ -53,13 +51,13 @@ def buttonManager = DeviceManager.getSpecificDevice("Zoltar");
 if(buttonManager==null)
 	throw new RuntimeException("Zoltar Device Missing!")
 Manager manager = new Manager(buttonManager)
-manager.setGPIO(true)
+manager.setGPIO(true,true)
 Thread.sleep(1000)
-manager.setGPIO(false)
+manager.setGPIO(false,true)
 Thread.sleep(1000)
-manager.setGPIO(true)
+manager.setGPIO(true,true)
 Thread.sleep(1000)
-manager.setGPIO(false)
+manager.setGPIO(false,true)
 Thread.sleep(1000)
 
 println "Pin 1: "+manager.getGPIO(0)+", pin 2: "+manager.getGPIO(1)
