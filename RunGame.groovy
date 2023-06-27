@@ -10,8 +10,7 @@ import edu.wpi.SimplePacketComs.device.gameController.*;
 import edu.wpi.SimplePacketComs.device.*
 
 import java.util.Arrays;
-
-
+// test comment
 MobileBase base=DeviceManager.getSpecificDevice( "zoltar",{
 	//If the device does not exist, prompt for the connection
 
