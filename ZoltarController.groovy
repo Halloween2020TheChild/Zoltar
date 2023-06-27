@@ -431,18 +431,18 @@ public class GPTInterface {
 	 }'
 	 */
 
-	public String request(String phrase, float randomness,int retrys) throws IOException {
+	public String request(String phrase,String name) throws IOException {
 
 		if(Math.random()>0.7)
-			phrase="Pretend you are a  fortune teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
+			phrase="Pretend you are a  fortune teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. The persons name is "+name+". make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
 		else
-			phrase="Pretend you are a  Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. Respond to: "+phrase
-		return gptRaw( phrase,  randomness, retrys);
+			phrase="Pretend you are a  Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. The persons name is "+name+". Respond to: "+phrase
+		return gptRaw( phrase, 0.9, 5);
 	}
 
 	public String cleanup(String phrase) throws IOException {
 
-		phrase="Please change the following phrase into third person. Use they/them pronouns only. Respond with only the corrected phrase and nothing else. The phrase is: "+phrase
+		phrase="If the phrase is refering to onesself, change the following phrase into third person. Use they/them/thier pronouns only. Otherwise, if the phrase is directed towads the recipiant, rephrase it in the first person with I/me/mine. Respond only with teh corrected phrase. The phrase is: "+phrase
 		return gptRaw( phrase, 0.9, 5);
 	}
 	public String whatName(String phrase) throws IOException {
@@ -740,7 +740,7 @@ try {
 		if(mode==AnimationMode.waitForSpeak)
 			mode=AnimationMode.facetrack
 	}
-	double voice =905
+	double voice =800
 	// 805 mayb64
 	// 857 laid back scottish?
 	// 864 impatient scottish??
@@ -755,6 +755,11 @@ try {
 		BowlerKernel.speak("What shall i call you?", 100, 0, voice, 1, 1.0,sp)
 		String nameTMp=gpt.promptFromMicrophone()
 		name = gpt.whatName(nameTMp)
+		if(name.toLowerCase().contains("friend")) {
+			BowlerKernel.speak("I'm sorry, i missed that, can you say your name again please?", 100, 0, voice, 1, 1.0,sp)
+			nameTMp=gpt.promptFromMicrophone()
+			name = gpt.whatName(nameTMp)
+		}
 		gpt.personToPayAttentionTo.name=name;
 		gpt.upf.save();
 		repeat=false;
@@ -768,19 +773,18 @@ try {
 		prompt = "What do you wish to ask the mighty Zol-tar, "+name+"?"
 	BowlerKernel.speak(prompt, 100, 0, voice, 1, 1.0,sp)
 
-	while(!Thread.interrupted() && gpt.capture.isOpened()) {Thread.sleep(100)}
+	//while(!Thread.interrupted() && gpt.capture.isOpened()) {Thread.sleep(100)}
 
 	if(gpt.capture.isOpened())
 		prompt = gpt.promptFromMicrophone();
 	mode =AnimationMode.spiritWorld
 	Thread initialPrompt=new Thread({
-		BowlerKernel.speak("Spirit World! Answer Me! "+name+" is asking you", 400, 0, voice, echo, 1.0,sp)
+		BowlerKernel.speak("Spirit World!", 400, 0, voice, echo, 1.0,sp)
 		String p=gpt.cleanup(prompt)
-		BowlerKernel.speak(p, 400, 0, voice, echo, 1.0,sp)
-
+		BowlerKernel.speak("Answer Me! "+(name.toLowerCase().contains("friend")?"my friend":name)+" is asking you: "+p, 400, 0, voice, echo, 1.0,sp)
 	})
 	if(gpt.capture.isOpened())initialPrompt.start()
-	response  = gpt.request(prompt,0.9,5)
+	response  = gpt.request(prompt,name)
 	if(gpt.capture.isOpened())println "\n\nResponse\n"+response
 	if(gpt.capture.isOpened())initialPrompt.join()
 	if(gpt.capture.isOpened())mode =AnimationMode.waitForSpeak

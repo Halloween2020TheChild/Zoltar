@@ -1,4 +1,5 @@
 import com.neuronrobotics.bowlerstudio.creature.MobileBaseLoader
+import com.neuronrobotics.bowlerstudio.scripting.ScriptingEngine
 import com.neuronrobotics.sdk.addons.kinematics.MobileBase
 import com.neuronrobotics.sdk.common.DeviceManager
 import edu.wpi.SimplePacketComs.BytePacketType;
@@ -51,15 +52,18 @@ def buttonManager = DeviceManager.getSpecificDevice("Zoltar");
 if(buttonManager==null)
 	throw new RuntimeException("Zoltar Device Missing!")
 Manager manager = new Manager(buttonManager)
-manager.setGPIO(true,true)
-Thread.sleep(1000)
+try {
+	manager.setGPIO(false,false)
+	while(!Thread.interrupted()) {
+		if(manager.getGPIO(1)==false) {
+			println "Running Zoltar Script"
+			ScriptingEngine.gitScriptRun("https://github.com/Halloween2020TheChild/Zoltar.git", "ZoltarController.groovy")
+		}
+		Thread.sleep(100);
+	}
+}catch(Throwable t) {
+}
 manager.setGPIO(false,true)
-Thread.sleep(1000)
-manager.setGPIO(true,true)
-Thread.sleep(1000)
-manager.setGPIO(false,true)
-Thread.sleep(1000)
 
-println "Pin 1: "+manager.getGPIO(0)+", pin 2: "+manager.getGPIO(1)
 
 return null
