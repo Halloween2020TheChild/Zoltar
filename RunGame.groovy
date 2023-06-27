@@ -47,6 +47,7 @@ class Manager{
 		return (p.getUpstream()[index].byteValue()>0)
 	}
 }
+// remove this and the script faults out BowlerStudio... wtf...
 ScriptingEngine.gitScriptRun("https://github.com/Halloween2020TheChild/Zoltar.git", "ResnetWithCamera.groovy")
 
 def buttonManager = DeviceManager.getSpecificDevice("Zoltar");
