@@ -55,13 +55,15 @@ if(buttonManager==null)
 	throw new RuntimeException("Zoltar Device Missing!")
 Manager manager = new Manager(buttonManager)
 try {
-	manager.setGPIO(false,false)
-	
+	manager.setGPIO(false,true)
 	while(!Thread.interrupted()) {
 		Thread.sleep(100);
 		if(manager.getGPIO(1)==false) {
 			println "Running Zoltar Script"
+			manager.setGPIO(false,false)
 			ScriptingEngine.gitScriptRun("https://github.com/Halloween2020TheChild/Zoltar.git", "ZoltarController.groovy")
+			manager.setGPIO(false,true)
+			
 		}
 	}
 }catch(Throwable t) {
