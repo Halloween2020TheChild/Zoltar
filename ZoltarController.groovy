@@ -187,6 +187,8 @@ class RollingAverage {
 	}
 
 }
+Predictor<BufferedImage, DetectedObjects> predictorDummy  = PredictorFactory.imageContentsFactory(ImagePredictorType.ultranet);
+
 public class GPTInterface {
 	private int width
 	private int height
@@ -213,29 +215,25 @@ public class GPTInterface {
 	DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
 	TargetDataLine microphone;
 	SourceDataLine speakers;
-
-	VideoCapture capture ;
+	UniquePersonFactory   upf= UniquePersonFactory.get();;
+	VideoCapture capture = OpenCVManager.get(0).getCapture();
 
 	int absoluteFaceSize=0;
 	Mat matrix;
 	WritableImage img = null;
 
-	Predictor<BufferedImage, DetectedObjects> predictor;
-	ImageFactory factory;
+	Predictor<BufferedImage, DetectedObjects> predictor  = PredictorFactory.imageContentsFactory(ImagePredictorType.ultranet);
+	ImageFactory 		factory=ImageFactory.getInstance();
 	int frames=0;
 	org.opencv.core.Point noseCenterOfFace = null
 	VBox workingMemory=new VBox()
-	UniquePersonFactory   upf;
 	UniquePerson personToPayAttentionTo;
 	long timePersonLastSeen=0;
 	long attentionTImeout=10000;
+	boolean startup = true;
 	public GPTInterface(String APIKey) {
 		this.API_KEY = APIKey;
-		capture= OpenCVManager.get(0).getCapture()
 		matrix =new Mat();
-		factory=ImageFactory.getInstance()
-		predictor  = PredictorFactory.imageContentsFactory(ImagePredictorType.ultranet);
-		upf= UniquePersonFactory.get();
 		upf.setWorkingMemory(workingMemory);
 		for(int i=0;i<5;i++)
 		if( capture.isOpened()) {
@@ -244,6 +242,7 @@ public class GPTInterface {
 			}
 		}
 		getFaces()
+		startup=false
 	}
 
 	public String request(String phrase) throws IOException {
@@ -312,9 +311,11 @@ public class GPTInterface {
 				DataBufferByte dataBuffer = (DataBufferByte) raster.getDataBuffer();
 				byte[] data = dataBuffer.getData();
 				matrix.get(0, 0, data);
-
-				DetectedObjects detection = predictor.predict(factory.fromImage(image));
+				ai.djl.modality.cv.Image imgtmp =factory.fromImage(image)
+				if(startup)println "Img from factory "+matrix.width()+" by "+matrix.height()+" bytes "+data.length
+				DetectedObjects detection = predictor.predict(imgtmp);
 				List<DetectedObject> items = detection.items();
+				if(startup)println "Detections  "+items
 				Rect[] facesArray = new Rect[items.size()];
 				for (int detectionIndex = 0; detectionIndex < items.size(); detectionIndex++) {
 					DetectedObject c = items.get(detectionIndex);

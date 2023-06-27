@@ -47,6 +47,7 @@ class Manager{
 		return (p.getUpstream()[index].byteValue()>0)
 	}
 }
+ScriptingEngine.gitScriptRun("https://github.com/Halloween2020TheChild/Zoltar.git", "ResnetWithCamera.groovy")
 
 def buttonManager = DeviceManager.getSpecificDevice("Zoltar");
 if(buttonManager==null)
@@ -54,12 +55,13 @@ if(buttonManager==null)
 Manager manager = new Manager(buttonManager)
 try {
 	manager.setGPIO(false,false)
+	
 	while(!Thread.interrupted()) {
+		Thread.sleep(100);
 		if(manager.getGPIO(1)==false) {
 			println "Running Zoltar Script"
 			ScriptingEngine.gitScriptRun("https://github.com/Halloween2020TheChild/Zoltar.git", "ZoltarController.groovy")
 		}
-		Thread.sleep(100);
 	}
 }catch(Throwable t) {
 }
