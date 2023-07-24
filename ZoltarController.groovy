@@ -126,6 +126,10 @@ MobileBase base=DeviceManager.getSpecificDevice( "zoltar",{
 	regen=true;
 	return m
 })
+
+// remove this and the script faults out BowlerStudio... wtf...
+ScriptingEngine.gitScriptRun("https://github.com/Halloween2020TheChild/Zoltar.git", "ResnetWithCamera.groovy")
+
 //if(regen) {
 //	MobileBaseCadManager get = MobileBaseCadManager.get( base)
 //	get.setConfigurationViewerMode(false)
