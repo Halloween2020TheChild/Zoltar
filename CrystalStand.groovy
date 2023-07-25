@@ -4,7 +4,7 @@ def radius = 3 + 3/8 // 3 + 3/8 inches
 radius = radius/2
 radius = radius * 25.4 // conv to mm
 def height = 6 // 6mm
-def radius_inner = 3 + 3/8 // 3 + 3/8 inches
+def radius_inner = 2 + 7/8
 radius_inner = radius_inner/2
 radius_inner = radius_inner * 25.4 // conv to mm
 def cutout_degree = 120
@@ -34,7 +34,9 @@ CSG cutout = new Isosceles(height,width,radius)
 body = body.difference(cutout)
 
 // diff w an internal cylinder
-
-
+CSG inner = new RoundedCylinder(radius_inner,height)
+                                .cornerRadius(0)// sets the radius of the corner
+                                .toCSG()// converts it to a CSG tor display
+body = body.difference(inner)
 
 return body
