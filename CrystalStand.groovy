@@ -1,9 +1,11 @@
 // get parameters & normalize
 
 def radius = 3 + 3/8 // 3 + 3/8 inches
+radius = radius/2
 radius = radius * 25.4 // conv to mm
 def height = 6 // 6mm
 def radius_inner = 3 + 3/8 // 3 + 3/8 inches
+radius_inner = radius_inner/2
 radius_inner = radius_inner * 25.4 // conv to mm
 def cutout_degree = 120
 
@@ -22,10 +24,14 @@ CSG top = new RoundedCylinder(radius,height)
 CSG body = top
 
 // diff w a Wedge or Isosceles
-//CSG cutout = new Isosceles(60,25,40).toCSG()
+//def
+CSG cutout = new Isosceles(60,25,40)
+				.toCSG()
+				.roty(90)
+				.movex(radius)
 
 // diff w an internal cylinder
 
 
 
-return body
+return [body, cutout]
