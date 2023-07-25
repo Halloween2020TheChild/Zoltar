@@ -24,8 +24,10 @@ CSG top = new RoundedCylinder(radius,height)
 CSG body = top
 
 // diff w a Wedge or Isosceles
-//def
-CSG cutout = new Isosceles(60,25,40)
+// calculate width using trigonometry (sine)
+def width = radius * Math.sin(Math.toRadians(cutout_degree/2))
+width = width * 2
+CSG cutout = new Isosceles(height,width,radius)
 				.toCSG()
 				.roty(90)
 				.movex(radius)
