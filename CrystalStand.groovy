@@ -31,9 +31,10 @@ CSG cutout = new Isosceles(height,width,radius)
 				.toCSG()
 				.roty(90)
 				.movex(radius)
+body = body.difference(cutout)
 
 // diff w an internal cylinder
 
 
 
-return [body, cutout]
+return body
