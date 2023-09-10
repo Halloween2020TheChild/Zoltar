@@ -596,6 +596,38 @@ public double mouthOpenVector(AudioStatus s) {
 	}
 	return 0;
 }
+
+class TabManagerDevice{
+	String myName;
+	boolean connected=false;
+	ImageView imageView = new ImageView();
+	Tab t = new Tab()
+	public TabManagerDevice(String name) {
+		myName=name;
+		
+	}
+	
+	String getName() {
+		return myName
+	}
+	
+	boolean connect() {
+		connected=true;
+		t.setContent(imageView)
+		t.setText(myName)
+		t.setOnCloseRequest({event ->
+			disconnect()
+		});
+		BowlerStudioController.addObject(t, null)
+		return connected
+	}
+	void disconnect() {
+		if(connected) {
+			BowlerStudioController.removeObject(t)
+		}
+		
+	}
+}
 try {
 	println "Loading API key from "+keyLocation
 	String content = new String(Files.readAllBytes(Paths.get(keyLocation)));
@@ -733,19 +765,37 @@ try {
 		eye.setTargetEngineeringUnits(-42.0);
 		eye.flush(0)
 	}).start()
-
+	def tabHolder = DeviceManager.getSpecificDevice("TabHolder", {
+		TabManagerDevice dev = new TabManagerDevice("TabHolder")
+		dev.connect()
+		return dev
+	})
+	ImageView imageView = tabHolder.imageView
+	AudioStatus laststatus=null
+	
+	HashMap<AudioStatus,javafx.scene.image.Image> images = new HashMap<>()
+	String url = "https://github.com/madhephaestus/TextToSpeechASDRTest.git"
+	for(AudioStatus s:EnumSet.allOf(AudioStatus.class)) {
+		File f = new File(ScriptingEngine.getRepositoryCloneDirectory(url).getAbsolutePath()+ "/img/lisa-"+s.parsed+".png")
+		println "Loading "+f.getAbsolutePath()
+		javafx.scene.image.Image image = new javafx.scene.image.Image(new FileInputStream(f.getAbsolutePath()));
+		images.put(s, image)
+	}
+	
 	ISpeakingProgress sp ={double percent,AudioStatus status->
 		gpt.status=status;
 		gpt.percent=percent
-		//println gpt.percent+" " +gpt.status
-		double isMouthOpen = mouthOpenVector(gpt.status)
-		mouth.setTargetEngineeringUnits(isMouthOpen*-10.0);
-		mouth.flush(0)
-		Thread.sleep(0,100)
+		if(status!=laststatus) {
+			//println percent+" " +status
+			laststatus=status;
+			Platform.runLater({
+				imageView.setImage(images.get(status))
+			})
+		}
 		if(mode==AnimationMode.waitForSpeak)
 			mode=AnimationMode.facetrack
 	}
-	double voice =800
+	double voice =805
 	// 805 mayb64
 	// 857 laid back scottish?
 	// 864 impatient scottish??
