@@ -783,12 +783,13 @@ try {
 	}
 	
 	ISpeakingProgress sp ={double percent,AudioStatus status->
+		
 		gpt.status=status;
 		gpt.percent=percent
 		if(status!=laststatus) {
 			//println percent+" " +status
 			laststatus=status;
-			Platform.runLater({
+			BowlerStudio.runLater({
 				imageView.setImage(images.get(status))
 			})
 		}
@@ -832,11 +833,10 @@ try {
 
 	if(gpt.capture.isOpened())
 		prompt = gpt.promptFromMicrophone();
-	mode =AnimationMode.spiritWorld
+	mode =AnimationMode.facetrack
 	Thread initialPrompt=new Thread({
-		BowlerKernel.speak("Spirit World!", 400, 0, voice, echo, 1.0,sp)
 		String p=gpt.cleanup(prompt)
-		BowlerKernel.speak("Answer Me! "+(name.toLowerCase().contains("friend")?"my friend":name)+" is asking you: "+p, 400, 0, voice, echo, 1.0,sp)
+		BowlerKernel.speak("Spirit World! Answer Me! "+(name.toLowerCase().contains("friend")?"my friend":name)+" is asking you: "+p, 400, 0, voice, echo, 1.0,sp)
 	})
 	if(gpt.capture.isOpened())initialPrompt.start()
 	response  = gpt.request(prompt,name)
