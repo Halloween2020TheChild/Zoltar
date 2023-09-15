@@ -1,3 +1,7 @@
+import eu.mihosoft.vrl.v3d.CSG
+import eu.mihosoft.vrl.v3d.Isosceles
+import eu.mihosoft.vrl.v3d.RoundedCylinder
+
 // get parameters & normalize
 
 def radius = 3 + 3/8 // 3 + 3/8 inches
