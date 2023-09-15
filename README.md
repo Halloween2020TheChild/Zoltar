@@ -19,6 +19,12 @@ The first time it runs, it could take up  to 4 hours to download the 12gb DOcker
 To pre-empt this step, you can pre-build the Docker into your systems cache. 
 
 ```
+sudo groupadd docker
+
+sudo usermod -aG docker $USER
+
+newgrp docker
+
 git clone https://github.com/Halloween2020TheChild/CoquiDocker.git
 
 cd CoquiDocker
