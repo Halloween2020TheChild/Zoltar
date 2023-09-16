@@ -220,7 +220,7 @@ public class GPTInterface {
 	TargetDataLine microphone;
 	SourceDataLine speakers;
 	UniquePersonFactory   upf= UniquePersonFactory.get();;
-	VideoCapture capture = OpenCVManager.get(2`).getCapture();
+	VideoCapture capture = OpenCVManager.get(2).getCapture();
 
 	int absoluteFaceSize=0;
 	Mat matrix;
