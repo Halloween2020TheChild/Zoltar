@@ -220,7 +220,7 @@ public class GPTInterface {
 	TargetDataLine microphone;
 	SourceDataLine speakers;
 	UniquePersonFactory   upf= UniquePersonFactory.get();;
-	VideoCapture capture = OpenCVManager.get(0).getCapture();
+	VideoCapture capture = OpenCVManager.get(2`).getCapture();
 
 	int absoluteFaceSize=0;
 	Mat matrix;
@@ -685,7 +685,7 @@ try {
 
 				double look = lookAvg.get(gpt.lookVector())
 				//println "Look "+look
-				tiltTarget = tiltAvg.get(-gpt.tiltAngle*0.9)+5
+				tiltTarget = tiltAvg.get(-gpt.tiltAngle*0.9)+10
 				sinVal=-look*4-1.0;
 				cosVal=cosAvg.get(0)
 				nodAngle=nod.get(-gpt.nodVector())
@@ -699,7 +699,7 @@ try {
 			}
 
 			TransformNR changed=new TransformNR()
-			changed.setX(136)
+			changed.setX(146)
 
 
 			def headRnage=45

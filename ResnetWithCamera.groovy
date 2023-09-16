@@ -58,7 +58,7 @@ import com.neuronrobotics.bowlerkernel.djl.UniquePerson;
 
 UniquePersonFactory   upf = UniquePersonFactory.get();
 
-VideoCapture capture = OpenCVManager.get(0).getCapture()
+VideoCapture capture = OpenCVManager.get(2).getCapture()
 
 Mat matrix =new Mat();
 WritableImage img = null;
