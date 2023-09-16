@@ -438,7 +438,7 @@ public class GPTInterface {
 
 	public String request(String phrase,String name) throws IOException {
 
-		if(Math.random()>0.7)
+		if(Math.random()>0.99)
 			phrase="Pretend you are a  fortune teller that only gives bad fortunes. Keep your response less than "+(maxSize*0.5)+" characters. The persons name is "+name+". make sure it is pg 13. if it is dark, make sure its dark humor. Respond to: "+phrase
 		else
 			phrase="Pretend you are a  Fortune teller that gives good fortunies. Keep your response less than "+(maxSize*0.5)+" charecters. The persons name is "+name+". Respond to: "+phrase
@@ -685,7 +685,7 @@ try {
 
 				double look = lookAvg.get(gpt.lookVector())
 				//println "Look "+look
-				tiltTarget = tiltAvg.get(-gpt.tiltAngle*0.9)
+				tiltTarget = tiltAvg.get(-gpt.tiltAngle*0.9)+5
 				sinVal=-look*4-1.0;
 				cosVal=cosAvg.get(0)
 				nodAngle=nod.get(-gpt.nodVector())
@@ -699,13 +699,13 @@ try {
 			}
 
 			TransformNR changed=new TransformNR()
-			changed.setX(156)
+			changed.setX(136)
 
 
 			def headRnage=45
 			def analogy = 0
 			def analogz = 35
-			changed.setZ(200+analogz*cosVal)
+			changed.setZ(250+analogz*cosVal)
 			changed.setY(analogy)
 			def analogup = sinVal*headRnage
 			def rot = 179.96+analogup
@@ -776,10 +776,14 @@ try {
 	HashMap<AudioStatus,javafx.scene.image.Image> images = new HashMap<>()
 	String url = "https://github.com/madhephaestus/TextToSpeechASDRTest.git"
 	for(AudioStatus s:EnumSet.allOf(AudioStatus.class)) {
-		File f = new File(ScriptingEngine.getRepositoryCloneDirectory(url).getAbsolutePath()+ "/img/lisa-"+s.parsed+".png")
-		println "Loading "+f.getAbsolutePath()
-		javafx.scene.image.Image image = new javafx.scene.image.Image(new FileInputStream(f.getAbsolutePath()));
-		images.put(s, image)
+		try{
+			File f = new File(ScriptingEngine.getRepositoryCloneDirectory(url).getAbsolutePath()+ "/img/lisa-"+s.parsed+".png")
+			println "Loading "+f.getAbsolutePath()
+			javafx.scene.image.Image image = new javafx.scene.image.Image(new FileInputStream(f.getAbsolutePath()));
+			images.put(s, image)
+		}catch(Throwable t){
+			t.printStackTrace();
+		}
 	}
 	
 	ISpeakingProgress sp ={double percent,AudioStatus status->
@@ -833,7 +837,7 @@ try {
 
 	if(gpt.capture.isOpened())
 		prompt = gpt.promptFromMicrophone();
-	mode =AnimationMode.facetrack
+	//mode =AnimationMode.facetrack
 	Thread initialPrompt=new Thread({
 		String p=gpt.cleanup(prompt)
 		BowlerKernel.speak("Spirit World! Answer Me! "+(name.toLowerCase().contains("friend")?"my friend":name)+" is asking you: "+p, 400, 0, voice, echo, 1.0,sp)
@@ -842,7 +846,7 @@ try {
 	response  = gpt.request(prompt,name)
 	if(gpt.capture.isOpened())println "\n\nResponse\n"+response
 	if(gpt.capture.isOpened())initialPrompt.join()
-	if(gpt.capture.isOpened())mode =AnimationMode.waitForSpeak
+	//if(gpt.capture.isOpened())mode =AnimationMode.facetrack
 	if(gpt.capture.isOpened())BowlerKernel.speak(response, 100, 0, voice, 1, 1.0,sp)
 }catch(Throwable tr) {
 	BowlerStudio.printStackTrace(tr)
