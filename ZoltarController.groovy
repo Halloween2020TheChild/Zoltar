@@ -447,8 +447,8 @@ public class GPTInterface {
 
 	public String cleanup(String phrase) throws IOException {
 
-		phrase="If the phrase is refering to onesself, change the following phrase into third person. Use they/them/thier pronouns only. Otherwise, if the phrase is directed towads the recipiant, rephrase it in the first person with I/me/mine. Respond only with teh corrected phrase. The phrase is: "+phrase
-		return gptRaw( phrase, 0.9, 5);
+		//phrase="If the phrase is refering to onesself, change the following phrase into third person. Use they/them/thier pronouns only. Otherwise, if the phrase is directed towads the recipiant, rephrase it in the first person with I/me/mine. Respond only with teh corrected phrase. The phrase is: "+phrase
+		return phrase;//gptRaw( phrase, 0.9, 5);
 	}
 	public String whatName(String phrase) throws IOException {
 
@@ -782,7 +782,7 @@ try {
 			javafx.scene.image.Image image = new javafx.scene.image.Image(new FileInputStream(f.getAbsolutePath()));
 			images.put(s, image)
 		}catch(Throwable t){
-			t.printStackTrace();
+			BowlerStudio.printStackTrace(t);
 		}
 	}
 	

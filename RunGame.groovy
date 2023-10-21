@@ -57,15 +57,20 @@ try {
 	manager.setGPIO(false,true)
 	while(!Thread.interrupted()) {
 		Thread.sleep(100);
+		try{
 		if(manager.getGPIO(1)==false) {
 			println "Running Zoltar Script"
 			manager.setGPIO(false,false)
 			ScriptingEngine.gitScriptRun("https://github.com/Halloween2020TheChild/Zoltar.git", "ZoltarController.groovy")
 			manager.setGPIO(false,true)
-			
+			good
+		}
+		}catch(Throwable tr){
+			Bowlerstudio.printStackTrace(tr);
 		}
 	}
 }catch(Throwable t) {
+	
 }
 manager.setGPIO(false,true)
 
