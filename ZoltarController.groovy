@@ -198,7 +198,7 @@ public class GPTInterface {
 	private int height
 	private double tiltAngle
 	Alert a;
-	public final String AI_MODEL_NAME = "gpt-3.5-turbo-0613";
+	public final String AI_MODEL_NAME = "gpt-3.5-turbo";
 	Tab t=new Tab()
 	double percent=0;
 	private String API_KEY;
@@ -468,6 +468,7 @@ public class GPTInterface {
 			message.put("model", AI_MODEL_NAME)
 			message.put("temperature", randomness)
 			message.put("messages", Arrays.asList(messages))
+			message.put("max_tokens", 4096)
 
 			requestBody = gson.toJson(message, TT_mapStringString);
 
@@ -487,6 +488,7 @@ public class GPTInterface {
 
 			Response response = client.newCall(request).execute();
 			String jsonString = response.body().string();
+			println jsonString
 			HashMap<String, Object> database = gson.fromJson(jsonString, TT_mapStringString);
 			ArrayList<Object> choices = database.get("choices")
 			HashMap<String, Object> firstChoice = choices.get(0)
@@ -782,7 +784,7 @@ try {
 			javafx.scene.image.Image image = new javafx.scene.image.Image(new FileInputStream(f.getAbsolutePath()));
 			images.put(s, image)
 		}catch(Throwable t){
-			BowlerStudio.printStackTrace(t);
+			//BowlerStudio.printStackTrace(t);
 		}
 	}
 	
